@@ -120,9 +120,9 @@ def initPushbutton():
     
     
     # Set pin for colour invert button to be an input pin and set initial value to be pulled low (off)
-    GPIO.setup(PIN_NUMBER_INVERT, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(PIN_NUMBER_COLOR, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     # Setup event on rising edge, ignore additional signals in under BOUNCE_TIME_MS ms
-    GPIO.add_event_detect(PIN_NUMBER_INVERT, GPIO.RISING, callback=invert, bouncetime=BOUNCE_TIME_MS)
+    GPIO.add_event_detect(PIN_NUMBER_COLOR, GPIO.RISING, callback=invert, bouncetime=BOUNCE_TIME_MS)
 
 
 
