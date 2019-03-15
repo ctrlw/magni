@@ -6,13 +6,35 @@ import RPi.GPIO as GPIO        # Import Raspberry Pi GPIO library (for external 
 import subprocess              # Import subprocess to start camera view in background
 import sys, termios, tty, time # for character input from command line
 
+# you can adapt this script to your specific setup, by setting either
+# DISTANCE_TO_SURFACE_CM or DEFAULT_WIDTH_CM to your local measurements
+# WIDTHS_CM or SCALE_FACTORS can be modified for a fixed set of scale factors
+# PIN_NUMBER_... can be changed if you connect buttons to different GPIO pins
+
+# distance in cm between camera objective and the surface (e.g. table)
+# adapt this to your setup, or directly set the value DEFAULT_WIDTH_CM below
+DISTANCE_TO_SURFACE_CM = 24.5
+
+# visible width when calling "raspivid -f -rot 180" (measure with a ruler)
+# adapt this to your setup, as it depends on the camera and screen
+DEFAULT_WIDTH_CM = DISTANCE_TO_SURFACE_CM * 0.67
+# uncomment the following line to overwrite with your own measured value
+# DEFAULT_WIDTH_CM = 16.5
+
+# typical line widths to cycle through by pressing the scale button / enter
+# set your desired line widths here, e.g. from the newspaper, typical books or magazines
+WIDTHS_CM = [DEFAULT_WIDTH_CM, 12.5, 9, 5]
+
 
 # magnification when calling raspivid without parameters
-# adapt this value to your screen, by measuring the default scale factor with 2 rulers
+# value is from my initial setup, matters only if you set SCALE_FACTORS manually
 DEFAULT_FACTOR = 2.5
 
-# pre-defined scale factors (press button/enter for next), should be in ascending order
-SCALE_FACTORS = [DEFAULT_FACTOR, 5, 10]
+# pre-defined scale factors to cycle through with button/enter
+SCALE_FACTORS = [DEFAULT_FACTOR * DEFAULT_WIDTH_CM / x for x in WIDTHS_CM]
+# uncomment the following line if you rather want to define the scale factors manually
+# SCALE_FACTORS = [DEFAULT_FACTOR, 5, 10]
+
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
 
