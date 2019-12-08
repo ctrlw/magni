@@ -37,11 +37,10 @@ SCALE_FACTORS = [DEFAULT_FACTOR * DEFAULT_WIDTH_CM / x for x in WIDTHS_CM]
 
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
+GPIO.setmode(GPIO.BOARD) # Use physical pin numbering instead of BCM numbering
+PIN_NUMBER_SCALE =  7 # physical pin number of GPIO for scale button
+PIN_NUMBER_COLOR = 12 # physical pin number of GPIO for colour mode button
 
-PIN_NUMBER_SCALE = 10 # physical pin number of GPIO for scale button
-PIN_NUMBER_COLOR =  8 # physical pin number of GPIO for colour mode
-
-BOUNCE_TIME_MS = 300   # ms to wait till a new button event is generated (avoid double click artefacts)
 DELAY_S = 0.01        # s to sleep between polling the keyboard
 
 # default view of raspivid without specific scaling
@@ -65,7 +64,7 @@ def getch():
     return ch
 
 # toggle -ifx parameter between normal colours and inverted colours
-def invert(channel):
+def invert():
     global factor
     global RASPIVID
     if '-ifx' in RASPIVID:
@@ -90,7 +89,7 @@ def scale2roi(scale_factor):
     
 
 # react on button pressed
-def nextFactor(channel):
+def next_factor():
     global factor
         
     # find the highest entry in SCALE_FACTORS that is <= current factor
@@ -128,27 +127,34 @@ def scale(new_factor):
     #print(RASPIVID + ['-roi', roi])
     proc = subprocess.Popen(RASPIVID + ['-roi', roi])
     #print("Started new process", proc)
-    
-    
-# push button through GPIO
-def initPushbutton():    
-    GPIO.setwarnings(False) # Ignore warning for now
-    GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
-    
-    # Set pin for scale button to be an input pin and set initial value to be pulled low (off)
-    GPIO.setup(PIN_NUMBER_SCALE, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    # Setup event on rising edge, ignore additional signals in under BOUNCE_TIME_MS ms
-    GPIO.add_event_detect(PIN_NUMBER_SCALE, GPIO.RISING, callback=nextFactor, bouncetime=BOUNCE_TIME_MS) 
-    
-    
-    # Set pin for colour invert button to be an input pin and set initial value to be pulled low (off)
-    GPIO.setup(PIN_NUMBER_COLOR, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    # Setup event on rising edge, ignore additional signals in under BOUNCE_TIME_MS ms
-    GPIO.add_event_detect(PIN_NUMBER_COLOR, GPIO.RISING, callback=invert, bouncetime=BOUNCE_TIME_MS)
 
 
+# storing last state of buttons to filter out small spikes from EM noise
+button_state = {
+    PIN_NUMBER_SCALE: GPIO.HIGH,
+    PIN_NUMBER_COLOR: GPIO.HIGH
+}
 
-initPushbutton()
+def button_pressed(channel):
+    global button_state
+    current_state = GPIO.input(channel)
+    if current_state != button_state[channel]:
+        button_state[channel] = current_state
+        if channel == PIN_NUMBER_SCALE and current_state == GPIO.HIGH:
+            next_factor()
+        elif channel == PIN_NUMBER_COLOR and current_state == GPIO.HIGH:
+            invert()
+    
+# init push button through GPIO
+def init_buttons():
+    GPIO.setwarnings(False) # Ignore warnings for now
+    for channel in button_state:
+        state = button_state[channel]
+        up_down = GPIO.PUD_UP if state == GPIO.HIGH else GPIO.PUD_DOWN
+        GPIO.setup(channel, GPIO.IN, pull_up_down=up_down)
+        GPIO.add_event_detect(channel, GPIO.BOTH, callback=button_pressed) 
+
+init_buttons()
 
 # start displaying the default camera view
 #proc = subprocess.Popen(['raspivid', '-f', '-t', '9000', '-rot', '180', '-roi', '0.3,0,0.4,0.4'])
@@ -175,7 +181,7 @@ while ord(char) != ESCAPE_KEY:
 
     # pressing enter switches to next higher zoom factor, same as pressing the push button
     elif ord(char) == ENTER_KEY:
-        nextFactor('')
+        next_factor('')
         
     # pressing '/' toggles colour inversion
     elif char == '/':
