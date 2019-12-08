@@ -165,31 +165,32 @@ proc = subprocess.Popen(RASPIVID)
 char = ' '
 ENTER_KEY = 13
 ESCAPE_KEY = 27
-while ord(char) != ESCAPE_KEY:
-    # try to read character from stdin
-    char = getch()
+try:
+    while ord(char) != ESCAPE_KEY:
+        # try to read character from stdin
+        char = getch()
     
-    # pressing a digit key will use its value as the scale factor
-    if '0' <= char and char <= '9':
-        if char == '0':
-            # 0 is interpreted as 10
-            scale(10)
-        else:
-            # other digits are interpreted as their number
-            factor = ord(char) - ord('0')
-            scale(factor)
+        # pressing a digit key will use its value as the scale factor
+        if '0' <= char and char <= '9':
+            if char == '0':
+                # 0 is interpreted as 10
+                scale(10)
+            else:
+                # other digits are interpreted as their number
+                factor = ord(char) - ord('0')
+                scale(factor)
 
-    # pressing enter switches to next higher zoom factor, same as pressing the push button
-    elif ord(char) == ENTER_KEY:
-        next_factor('')
+        # pressing enter switches to next higher zoom factor, same as pressing the push button
+        elif ord(char) == ENTER_KEY:
+            next_factor('')
         
-    # pressing '/' toggles colour inversion
-    elif char == '/':
-        invert(0)
+        # pressing '/' toggles colour inversion
+        elif char == '/':
+            invert(0)
         
-    # wait a bit to not block the processor
-    time.sleep(DELAY_S)
+        # wait a bit to not block the processor
+        time.sleep(DELAY_S)
 
-
-GPIO.cleanup() # Clean up
-proc.terminate()
+finally:
+    GPIO.cleanup()
+    proc.terminate()
