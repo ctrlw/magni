@@ -37,9 +37,17 @@ SCALE_FACTORS = [DEFAULT_FACTOR * DEFAULT_WIDTH_CM / x for x in WIDTHS_CM]
 
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
+
+# define GPIO pins for (optional) push buttons
 GPIO.setmode(GPIO.BOARD) # Use physical pin numbering instead of BCM numbering
-PIN_NUMBER_SCALE =  7 # physical pin number of GPIO for scale button
-PIN_NUMBER_COLOR = 12 # physical pin number of GPIO for colour mode button
+PIN_NUMBER_SCALE =  7 # scale button
+PIN_NUMBER_COLOR = 12 # colour mode button
+
+# define keyboard keys for scale and colour switching
+KEY_NUMBER_SCALE = 13 # use Enter key to switch to next magnification level
+KEY_NUMBER_COLOR = ord('/') # use "/" key to toggle colour mode
+KEY_ESCAPE = 27 # use Escape to quit program
+
 
 DELAY_S = 0.01        # s to sleep between polling the keyboard
 
@@ -163,15 +171,18 @@ proc = subprocess.Popen(RASPIVID)
 
 # loop forever, or till escape is pressed
 char = ' '
-ENTER_KEY = 13
-ESCAPE_KEY = 27
 try:
-    while ord(char) != ESCAPE_KEY:
+    while ord(char) != KEY_ESCAPE:
         # try to read character from stdin
         char = getch()
+
+        if ord(char) == KEY_NUMBER_SCALE:
+            next_factor('') # switch to next higher zoom factor
+
+        elif ord(char) == KEY_NUMBER_COLOR:
+            invert(0) # toggle colour inversion
     
-        # pressing a digit key will use its value as the scale factor
-        if '0' <= char and char <= '9':
+        elif '0' <= char and char <= '9': # use digit keys as scale factor
             if char == '0':
                 # 0 is interpreted as 10
                 scale(10)
@@ -179,14 +190,6 @@ try:
                 # other digits are interpreted as their number
                 factor = ord(char) - ord('0')
                 scale(factor)
-
-        # pressing enter switches to next higher zoom factor, same as pressing the push button
-        elif ord(char) == ENTER_KEY:
-            next_factor('')
-        
-        # pressing '/' toggles colour inversion
-        elif char == '/':
-            invert(0)
         
         # wait a bit to not block the processor
         time.sleep(DELAY_S)
