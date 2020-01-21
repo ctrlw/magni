@@ -177,7 +177,7 @@ try:
         char = getch()
 
         if ord(char) == KEY_NUMBER_SCALE:
-            next_factor('') # switch to next higher zoom factor
+            next_factor() # switch to next higher zoom factor
 
         elif ord(char) == KEY_NUMBER_COLOR:
             invert(0) # toggle colour inversion
