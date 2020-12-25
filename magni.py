@@ -1,15 +1,17 @@
 #!/usr/bin/python3
-# load a program from command line, wait for button/key press event on raspi and
-# react by closing the previously launched program and re-opening it with a
-# different parameter
+# Open camera preview, wait for button/key press event on raspi and react by
+# adapting camera parameters
+from picamera import PiCamera  # Import camera functions
 import RPi.GPIO as GPIO        # Import Raspberry Pi GPIO library (for external button)
-import subprocess              # Import subprocess to start camera view in background
 import sys, termios, tty, time # for character input from command line
 
 # you can adapt this script to your specific setup, by setting either
 # DISTANCE_TO_SURFACE_CM or DEFAULT_WIDTH_CM to your local measurements
 # WIDTHS_CM or SCALE_FACTORS can be modified for a fixed set of scale factors
 # PIN_NUMBER_... can be changed if you connect buttons to different GPIO pins
+
+# rotate view by 180 degrees for the typical use-case with camera behind object
+ROTATION = 180
 
 # distance in cm between camera objective and the surface (e.g. table)
 # adapt this to your setup, or directly set the value DEFAULT_WIDTH_CM below
@@ -51,14 +53,6 @@ KEY_ESCAPE = 27 # use Escape to quit program
 
 DELAY_S = 0.01        # s to sleep between polling the keyboard
 
-# default view of raspivid without specific scaling
-# raspivid -f -t 0 -rot 180
-# -f is full screen
-# -t gets a timeout value in ms (0 for no timeout)
-# -rot is rotation, depends on the way the camera is mounted
-# -ifx controls image effects, allows e.g. colour inversion
-RASPIVID = ['raspivid', '-f', '-t', '0', '-rot', '180', '-ifx', 'none']
-
 
 # read a single character, taken from http://code.activestate.com/recipes/134892/
 def getch():
@@ -71,17 +65,14 @@ def getch():
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
 
-# toggle -ifx parameter between normal colours and inverted colours
+# toggle between normal colours and inverted colours
 def invert():
     global factor
-    global RASPIVID
-    if '-ifx' in RASPIVID:
-        i = RASPIVID.index('-ifx')
-        RASPIVID[i + 1] = 'negative' if RASPIVID[i + 1] == 'none' else 'none'
-        # reload with toggled image effect
-        scale(factor)
+    global camera
+    camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'
+    scale(factor)
 
-# convert a scale factor to the values needed by raspivid's roi parameter
+# convert a scale factor to the values needed by raspivid's roi/crop parameter
 def scale2roi(scale_factor):
     diameter = DEFAULT_FACTOR / scale_factor
     radius = diameter / 2
@@ -91,9 +82,8 @@ def scale2roi(scale_factor):
     start = max(start, 0)
     diameter = min(diameter, 1)
     
-    # y value is always 0, to have the same upper position regardless of scale factor ()
-    roi = "%.2f,%.2f,%.2f,%.2f" % (start, 0, diameter, diameter)
-    return roi
+    # y value is always 0, to have the same upper position regardless of scale factor
+    return (start, 0, diameter, diameter)
     
 
 # react on button pressed
@@ -117,24 +107,14 @@ def next_factor():
     
 # change to given scale factor
 def scale(new_factor):
-    global proc
+    global camera
     global factor
     
     factor = max(new_factor, DEFAULT_FACTOR)
-    
     #print("Scale factor", factor)
-
-    # terminate current camera view, to restart with a different scale factor
-    proc.terminate()
-    # @TODO: wait till it's really terminated
     
-    # convert factor to raspivid's -roi parameters
-    roi = scale2roi(factor)
-
-    # start with new scale factor
-    #print(RASPIVID + ['-roi', roi])
-    proc = subprocess.Popen(RASPIVID + ['-roi', roi])
-    #print("Started new process", proc)
+    # update crop / roi value
+    camera.crop = scale2roi(factor)
 
 
 # storing last state of buttons to filter out small spikes from EM noise
@@ -165,9 +145,9 @@ def init_buttons():
 init_buttons()
 
 # start displaying the default camera view
-#proc = subprocess.Popen(['raspivid', '-f', '-t', '9000', '-rot', '180', '-roi', '0.3,0,0.4,0.4'])
-proc = subprocess.Popen(RASPIVID)
-#print(proc)
+camera = PiCamera()
+camera.rotation = ROTATION
+camera.start_preview()
 
 # loop forever, or till escape is pressed
 char = ' '
@@ -180,7 +160,7 @@ try:
             next_factor() # switch to next higher zoom factor
 
         elif ord(char) == KEY_NUMBER_COLOR:
-            invert(0) # toggle colour inversion
+            invert() # toggle colour inversion
     
         elif '0' <= char and char <= '9': # use digit keys as scale factor
             if char == '0':
@@ -196,4 +176,5 @@ try:
 
 finally:
     GPIO.cleanup()
-    proc.terminate()
+    camera.stop_preview()
+    camera.close()
