@@ -23,23 +23,24 @@ A more in-depth description of 2 hardware setups is given at http://www.fhack.or
 If you use the optional push buttons, the script expects them at Pin 7 for the scale button and Pin 12 for the colour-switch button, using physical numbering (7 being the 4th pin on the left, 12 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
 ## Setup
-* Download [Raspbian Buster Lite](https://www.raspberrypi.org/downloads/raspbian/) and install on SD card
+* Download [Raspberry Pi OS Lite](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
 * Connect camera
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal)
 * Run `sudo raspi-config`
-  * Interfacing options -> Enable camera
-  * Boot options -> Desktop / CLI -> Console Autologin
-  * Network options -> Setup Wifi (unless you connect by cable)
-  * Save and reboot
+  * System options -> Boot / Autologin -> Console Autologin
+  * Interface options -> Camera -> Enable
+  * System options -> Wireless LAN (if you want to connect from another computer by wifi)
+  * Interface options -> SSH -> Enable (only if you want to connect from another computer)
+  * Save and `sudo reboot`
 * After reboot, adapt the camera focus to your setup: `raspivid -f -rot 180 -t 0`
   * If you see the current camera view, and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rot (0, 90, 180, 270) and adapt them later in magni.py
   * If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
   * Use Ctrl-c to get out of the camera view
 * Run the following commands in the terminal:
 ```
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install python-rpi.gpio python3-rpi.gpio
+sudo apt-get -y update
+sudo apt-get -y upgrade
+sudo apt-get install -y python3-rpi.gpio python3-picamera
 wget https://github.com/ctrlw/magni/raw/master/magni.py
 chmod +x magni.py
 echo "clear" >> .bashrc
@@ -80,9 +81,9 @@ You can easily adapt magni.py to your own setup and needs:
 * `KEY_NUMBER_SCALE`: Set the keyboard key you want to use to switch through scale factors
 * `KEY_NUMBER_COLOR`: Set the keyboard key you want to use to toggle the colour-mode
 * `KEY_NUMBER_ESCAPE`: Set the keyboard key you want to use to get back to command line
-* `RASPIVID`: Change the value after `-rot` to the camera rotation in your setup if the camera is not placed behind the object (supports '0', '90', '180' and '270')
+* `ROTATION`: Change the value to the camera rotation in your setup if the camera is not placed behind the object (supports 0, 90, 180 and 270)
 
 ## Limitations
 * Magnification is done in software, so scale factors above 10 tend to be noisy (with Raspberry Pi camera v2)
 * The camera focus is fixed, so it cannot adapt to objects that are much closer or further
-* It takes almost 50 seconds from power on till the picture is shown
+* It may take 1 minute from power on till the picture is shown (depending on model and SD card)
