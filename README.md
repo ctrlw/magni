@@ -1,9 +1,15 @@
 # magni
 Software for a simple video magnifier running on Raspberry Pi
 
+![Magnifier used to fill a form](docs/form-225x300.jpg)
+
 ## Description
 This project aims to build a video magnifier based on Raspberry Pi and its camera. It can be used to see printed text or images at a larger scale, or to identify small parts like SMD electronics. The device has to be connected to a monitor which will display the image from the camera at a specific magnification level. The user can step through predefined scale factors with a push-button or the Enter key, and switch to colour-inversion with a second push button or the "/" key.
 After the initial setup, the device works fully offline and does not need an internet connection.
+
+![Magnifier with low magnification](docs/magni-small-300x225.jpg)
+![Magnifier with medium magnification](docs/magni-mid-300x225.jpg)
+![Magnifier with high magnification](docs/magni-big-300x225.jpg)
 
 ## Hardware
 To build the magnifier, you need at least the following
@@ -16,9 +22,11 @@ To build the magnifier, you need at least the following
 * Micro USB charger
 * Micro SD card (>= 4GB)
 * HDMI monitor + cable
-* Material for the mount
+* Material for the mount. Let your creativity flow, or follow these examples
+  * [Lamp setup](docs/magni-lamp-mount.md) (basic and simple)
+  * [Flexible arm](docs/magni-flexible-arm-mount.md) with one push-button
 
-A more in-depth description of 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
+A more in-depth description of the 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
 If you use the optional push buttons, the script expects them at Pin 7 for the scale button and Pin 12 for the colour-switch button, using physical numbering (7 being the 4th pin on the left, 12 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
@@ -71,6 +79,11 @@ If you want to do changes after running the script, run the following commands:
 
 You can use them to change files like magni.py later, but they will not undo all the changes from the read-only-fs.sh script.
 
+## Camera focus setup
+When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. If you’re smart you got a Raspberry Pi camera v2 and do it the easy way, just turning the white ring tool. On the older model or cheap alternatives, the lens may be glued which can still be adapted, but you can potentially break the camera.
+
+![Adjust camera focus](docs/camera-focus-300x225.jpg)
+
 ## Modifications
 You can easily adapt magni.py to your own setup and needs:
 * `DISTANCE_TO_SURFACE_CM`: Distance between the camera lens and the surface, adapt it to your setup
@@ -85,5 +98,5 @@ You can easily adapt magni.py to your own setup and needs:
 
 ## Limitations
 * Magnification is done in software, so scale factors above 10 tend to be noisy (with Raspberry Pi camera v2)
-* The camera focus is fixed, so it cannot adapt to objects that are much closer or further
-* It may take 1 minute from power on till the picture is shown (depending on model and SD card)
+* The camera focus is fixed, so it cannot adapt to objects that are much closer or further away
+* It may take a minute from power on till the picture is shown (depending on model and SD card)
