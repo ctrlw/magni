@@ -25,10 +25,11 @@ To build the magnifier, you need at least the following
 * Material for the mount. Let your creativity flow, or follow these examples
   * [Lamp setup](docs/magni-lamp-mount.md) (basic and simple)
   * [Flexible arm](docs/magni-flexible-arm-mount.md) with one push-button
+  * [Box setup](docs/magni-box-mount.md) with 2 push-buttons
 
-A more in-depth description of the 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
+A slightly more in-depth description of the first 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
-If you use the optional push buttons, the script expects them at Pin 7 for the scale button and Pin 12 for the colour-switch button, using physical numbering (7 being the 4th pin on the left, 12 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
+If you use the optional push buttons instead of a numerical keyboard, the script expects them at Pin 7 for the scale button and Pin 12 for the colour-invert button, using physical numbering (7 being the 4th pin on the left, 12 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
 ## Setup
 * Download [Raspberry Pi OS Lite](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
@@ -79,8 +80,8 @@ If you want to do changes after running the script, run the following commands:
 
 You can use them to change files like magni.py later, but they will not undo all the changes from the read-only-fs.sh script.
 
-## Camera focus setup
-When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. If you’re smart you got a Raspberry Pi camera v2 and do it the easy way, just turning the white ring tool. On the older model or cheap alternatives, the lens may be glued which can still be adapted, but you can potentially break the camera.
+## Camera focus
+When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. If you’re smart you got a Raspberry Pi camera v2 and do it the easy way, just turning the white ring tool. On the older camera model or cheap alternatives, the lens may be glued and can still be adapted, but you risk breaking the camera.
 
 ![Adjust camera focus](docs/camera-focus-300x225.jpg)
 

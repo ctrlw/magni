@@ -7,7 +7,7 @@ This is the most basic setup.
 * Numeric keypad
 * Wooden peg with a bit of rubber gum inside
 * Twist tie (to attach the case to the lamp)
-* Cardboard to “protect” the camera (3d printer anyone?)
+* Cardboard to “protect” the camera
 
 ## Building
 There’s really nothing to it. Very simple to “build”. Not exactly stable.
@@ -16,4 +16,4 @@ There’s really nothing to it. Very simple to “build”. Not exactly stable.
 ![Magni lamp setup back](./lamp-back-768x576.jpg)
 
 ## Usage
-Pressing a digit on the numeric keypad switches magnification to that factor (except for too small values, i.e. "1" normally does nothing). Pressing the Enter key switches to next preset magnification level. Pressing “/” even inverses colours (some people are better reading white text on black background). This is not exclusive to this build, of course the keypad can also be attached to the other version.
+Pressing a digit on the numeric keypad switches magnification to that factor (except for too small values, i.e. "1" normally does nothing). Pressing the Enter key switches to next preset magnification level. Pressing “/” inverts colours (some people are better reading white text on black background). This is not exclusive to this build, of course the keypad can also be attached to other versions.
