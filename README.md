@@ -29,7 +29,7 @@ To build the magnifier, you need at least the following
 
 A slightly more in-depth description of the first 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
-If you use the optional push buttons instead of a numerical keyboard, the script expects them at Pin 7 for the scale button and Pin 12 for the colour-invert button, using physical numbering (7 being the 4th pin on the left, 12 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
+If you use the optional push buttons instead of a numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour-invert button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
 ## Setup
 * Download [Raspberry Pi OS Lite](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
@@ -49,7 +49,7 @@ If you use the optional push buttons instead of a numerical keyboard, the script
 ```
 sudo apt-get -y update
 sudo apt-get -y upgrade
-sudo apt-get install -y python3-rpi.gpio python3-picamera
+sudo apt-get install -y python3-picamera python3-gpiozero python3-evdev
 wget https://github.com/ctrlw/magni/raw/master/magni.py
 chmod +x magni.py
 echo "clear" >> .bashrc
@@ -90,11 +90,8 @@ You can easily adapt magni.py to your own setup and needs:
 * `DISTANCE_TO_SURFACE_CM`: Distance between the camera lens and the surface, adapt it to your setup
 * `WIDTHS_CM`: Defines the approximate widths you can iterate through with the scale button. You can change the values, e.g. to the column widths of expected reading material, add more values or remove some
 * `SCALE_FACTORS`: Uncomment and modify this line if you rather want to specify scale factors directly instead of line widths
-* `PIN_NUMBER_SCALE`: Set the (physical) GPIO pin number where you connect the optional scale push-button
-* `PIN_NUMBER_COLOR`: Set the (physical) GPIO pin number where you connect the optional colour-mode push-button
-* `KEY_NUMBER_SCALE`: Set the keyboard key you want to use to switch through scale factors
-* `KEY_NUMBER_COLOR`: Set the keyboard key you want to use to toggle the colour-mode
-* `KEY_NUMBER_ESCAPE`: Set the keyboard key you want to use to get back to command line
+* `PIN_NUMBER_SCALE`: Set the (BCM) GPIO pin number where you connect the optional scale push-button
+* `PIN_NUMBER_COLOR`: Set the (BCM) GPIO pin number where you connect the optional colour-mode push-button
 * `ROTATION`: Change the value to the camera rotation in your setup if the camera is not placed behind the object (supports 0, 90, 180 and 270)
 
 ## Limitations

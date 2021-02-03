@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 # Open camera preview, wait for button/key press event on raspi and react by
 # adapting camera parameters
+import asyncio
+import evdev                   # for input from mouse and command line
+from gpiozero import Button    # for external buttons
 from picamera import PiCamera  # Import camera functions
-import RPi.GPIO as GPIO        # Import Raspberry Pi GPIO library (for external button)
-import sys, termios, tty, time # for character input from command line
+import sys
+import time
 
 # you can adapt this script to your specific setup, by setting either
 # DISTANCE_TO_SURFACE_CM or DEFAULT_WIDTH_CM to your local measurements
@@ -41,36 +44,13 @@ factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
 
 # define GPIO pins for (optional) push buttons
-GPIO.setmode(GPIO.BOARD) # Use physical pin numbering instead of BCM numbering
-PIN_NUMBER_SCALE =  7 # scale button
-PIN_NUMBER_COLOR = 12 # colour mode button
-
-# define keyboard keys for scale and colour switching
-KEY_NUMBER_SCALE = 13 # use Enter key to switch to next magnification level
-KEY_NUMBER_COLOR = ord('/') # use "/" key to toggle colour mode
-KEY_ESCAPE = 27 # use Escape to quit program
-
-
-DELAY_S = 0.01        # s to sleep between polling the keyboard
-
-
-# read a single character, taken from http://code.activestate.com/recipes/134892/
-def getch():
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(sys.stdin.fileno())
-        ch = sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch
+PIN_NUMBER_SCALE =  4 # physical 7, scale button
+PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
 
 # toggle between normal colours and inverted colours
 def invert():
-    global factor
     global camera
     camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'
-    scale(factor)
 
 # convert a scale factor to the values needed by raspivid's roi/crop parameter
 def scale2roi(scale_factor):
@@ -116,65 +96,77 @@ def scale(new_factor):
     # update crop / roi value
     camera.crop = scale2roi(factor)
 
-
-# storing last state of buttons to filter out small spikes from EM noise
-button_state = {
-    PIN_NUMBER_SCALE: GPIO.HIGH,
-    PIN_NUMBER_COLOR: GPIO.HIGH
-}
-
-def button_pressed(channel):
-    global button_state
-    current_state = GPIO.input(channel)
-    if current_state != button_state[channel]:
-        button_state[channel] = current_state
-        if channel == PIN_NUMBER_SCALE and current_state == GPIO.HIGH:
-            next_factor()
-        elif channel == PIN_NUMBER_COLOR and current_state == GPIO.HIGH:
-            invert()
-    
-# init push button through GPIO
-def init_buttons():
-    GPIO.setwarnings(False) # Ignore warnings for now
-    for channel in button_state:
-        state = button_state[channel]
-        up_down = GPIO.PUD_UP if state == GPIO.HIGH else GPIO.PUD_DOWN
-        GPIO.setup(channel, GPIO.IN, pull_up_down=up_down)
-        GPIO.add_event_detect(channel, GPIO.BOTH, callback=button_pressed) 
-
-init_buttons()
+def quit():
+    global devices    
+    asyncio.get_event_loop().stop()
+    for dev in devices:
+        dev.ungrab()
 
 # start displaying the default camera view
-camera = PiCamera()
-camera.rotation = ROTATION
-camera.start_preview()
+def init_camera():
+    camera = PiCamera()
+    camera.rotation = ROTATION
+    camera.start_preview()
+    return camera
 
-# loop forever, or till escape is pressed
-char = ' '
+
+devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
+for dev in devices:
+    dev.grab()
+key2function = {
+    # mouse buttons
+    evdev.ecodes.BTN_MOUSE: next_factor,
+    evdev.ecodes.BTN_RIGHT: invert,
+    # evdev.ecodes.BTN_MIDDLE: mouse_mid,
+
+    # regular keys
+    evdev.ecodes.KEY_Q: quit,
+    evdev.ecodes.KEY_ESC: quit,
+    evdev.ecodes.KEY_ENTER: next_factor,
+    evdev.ecodes.KEY_SLASH: invert,
+    evdev.ecodes.KEY_0: lambda: scale(10),
+    evdev.ecodes.KEY_1: lambda: scale(1),
+    evdev.ecodes.KEY_2: lambda: scale(2),
+    evdev.ecodes.KEY_3: lambda: scale(3),
+    evdev.ecodes.KEY_4: lambda: scale(4),
+    evdev.ecodes.KEY_5: lambda: scale(5),
+    evdev.ecodes.KEY_6: lambda: scale(6),
+    evdev.ecodes.KEY_7: lambda: scale(7),
+    evdev.ecodes.KEY_8: lambda: scale(8),
+    evdev.ecodes.KEY_9: lambda: scale(9),
+
+    # numeric keypad
+    evdev.ecodes.KEY_KPENTER: next_factor,
+    evdev.ecodes.KEY_KPSLASH: invert,
+    evdev.ecodes.KEY_KP0: lambda: scale(10),
+    evdev.ecodes.KEY_KP1: lambda: scale(1),
+    evdev.ecodes.KEY_KP2: lambda: scale(2),
+    evdev.ecodes.KEY_KP3: lambda: scale(3),
+    evdev.ecodes.KEY_KP4: lambda: scale(4),
+    evdev.ecodes.KEY_KP5: lambda: scale(5),
+    evdev.ecodes.KEY_KP6: lambda: scale(6),
+    evdev.ecodes.KEY_KP7: lambda: scale(7),
+    evdev.ecodes.KEY_KP8: lambda: scale(8),
+    evdev.ecodes.KEY_KP9: lambda: scale(9),
+}
+async def handle_events(device):
+    async for event in device.async_read_loop():
+        if event.type == evdev.ecodes.EV_KEY and event.value == 0 and event.code in key2function:
+            key2function[event.code]()
+
+button1 = Button(PIN_NUMBER_SCALE)
+button1.when_pressed = next_factor
+button2 = Button(PIN_NUMBER_COLOR)
+button2.when_pressed = invert
+
+camera = init_camera()
+
 try:
-    while ord(char) != KEY_ESCAPE:
-        # try to read character from stdin
-        char = getch()
-
-        if ord(char) == KEY_NUMBER_SCALE:
-            next_factor() # switch to next higher zoom factor
-
-        elif ord(char) == KEY_NUMBER_COLOR:
-            invert() # toggle colour inversion
-    
-        elif '0' <= char and char <= '9': # use digit keys as scale factor
-            if char == '0':
-                # 0 is interpreted as 10
-                scale(10)
-            else:
-                # other digits are interpreted as their number
-                factor = ord(char) - ord('0')
-                scale(factor)
-        
-        # wait a bit to not block the processor
-        time.sleep(DELAY_S)
+    for device in devices:
+        asyncio.ensure_future(handle_events(device))
+    loop = asyncio.get_event_loop()
+    loop.run_forever()
 
 finally:
-    GPIO.cleanup()
     camera.stop_preview()
     camera.close()
