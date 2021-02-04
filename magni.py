@@ -2,6 +2,7 @@
 # Open camera preview, wait for button/key press event on raspi and react by
 # adapting camera parameters
 import asyncio
+from datetime import datetime
 import evdev                   # for input from mouse and command line
 from gpiozero import Button    # for external buttons
 from picamera import PiCamera  # Import camera functions
@@ -102,6 +103,13 @@ def quit():
     for dev in devices:
         dev.ungrab()
 
+def save_photo():
+    global camera
+    camera.stop_preview()
+    timestamp = datetime.now().isoformat()
+    camera.capture('/home/pi/{}.jpg'.format(timestamp))
+    camera.start_preview()
+
 # start displaying the default camera view
 def init_camera():
     camera = PiCamera()
@@ -110,49 +118,44 @@ def init_camera():
     return camera
 
 
-devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-for dev in devices:
-    dev.grab()
-key2function = {
-    # mouse buttons
-    evdev.ecodes.BTN_MOUSE: next_factor,
-    evdev.ecodes.BTN_RIGHT: invert,
-    # evdev.ecodes.BTN_MIDDLE: mouse_mid,
-
-    # regular keys
-    evdev.ecodes.KEY_Q: quit,
-    evdev.ecodes.KEY_ESC: quit,
-    evdev.ecodes.KEY_ENTER: next_factor,
-    evdev.ecodes.KEY_SLASH: invert,
-    evdev.ecodes.KEY_0: lambda: scale(10),
-    evdev.ecodes.KEY_1: lambda: scale(1),
-    evdev.ecodes.KEY_2: lambda: scale(2),
-    evdev.ecodes.KEY_3: lambda: scale(3),
-    evdev.ecodes.KEY_4: lambda: scale(4),
-    evdev.ecodes.KEY_5: lambda: scale(5),
-    evdev.ecodes.KEY_6: lambda: scale(6),
-    evdev.ecodes.KEY_7: lambda: scale(7),
-    evdev.ecodes.KEY_8: lambda: scale(8),
-    evdev.ecodes.KEY_9: lambda: scale(9),
-
-    # numeric keypad
-    evdev.ecodes.KEY_KPENTER: next_factor,
-    evdev.ecodes.KEY_KPSLASH: invert,
-    evdev.ecodes.KEY_KP0: lambda: scale(10),
-    evdev.ecodes.KEY_KP1: lambda: scale(1),
-    evdev.ecodes.KEY_KP2: lambda: scale(2),
-    evdev.ecodes.KEY_KP3: lambda: scale(3),
-    evdev.ecodes.KEY_KP4: lambda: scale(4),
-    evdev.ecodes.KEY_KP5: lambda: scale(5),
-    evdev.ecodes.KEY_KP6: lambda: scale(6),
-    evdev.ecodes.KEY_KP7: lambda: scale(7),
-    evdev.ecodes.KEY_KP8: lambda: scale(8),
-    evdev.ecodes.KEY_KP9: lambda: scale(9),
-}
 async def handle_events(device):
     async for event in device.async_read_loop():
-        if event.type == evdev.ecodes.EV_KEY and event.value == 0 and event.code in key2function:
-            key2function[event.code]()
+        if event.type == evdev.ecodes.EV_KEY and event.value == 0:
+            code = event.code
+            # mouse buttons
+            if code == evdev.ecodes.BTN_MOUSE: next_factor()
+            elif code == evdev.ecodes.BTN_RIGHT: invert()
+            elif code == evdev.ecodes.BTN_MIDDLE: save_photo()
+
+            # regular keys
+            elif code == evdev.ecodes.KEY_Q: quit()
+            elif code == evdev.ecodes.KEY_ESC: quit()
+            elif code == evdev.ecodes.KEY_ENTER: next_factor()
+            elif code == evdev.ecodes.KEY_SLASH: invert()
+            elif code == evdev.ecodes.KEY_0: scale(10)
+            elif code == evdev.ecodes.KEY_1: scale(1)
+            elif code == evdev.ecodes.KEY_2: scale(2)
+            elif code == evdev.ecodes.KEY_3: scale(3)
+            elif code == evdev.ecodes.KEY_4: scale(4)
+            elif code == evdev.ecodes.KEY_5: scale(5)
+            elif code == evdev.ecodes.KEY_6: scale(6)
+            elif code == evdev.ecodes.KEY_7: scale(7)
+            elif code == evdev.ecodes.KEY_8: scale(8)
+            elif code == evdev.ecodes.KEY_9: scale(9)
+
+            # numeric keypad
+            elif code == evdev.ecodes.KEY_KPENTER: next_factor()
+            elif code == evdev.ecodes.KEY_KPSLASH: invert()
+            elif code == evdev.ecodes.KEY_KP0: scale(10)
+            elif code == evdev.ecodes.KEY_KP1: scale(1)
+            elif code == evdev.ecodes.KEY_KP2: scale(2)
+            elif code == evdev.ecodes.KEY_KP3: scale(3)
+            elif code == evdev.ecodes.KEY_KP4: scale(4)
+            elif code == evdev.ecodes.KEY_KP5: scale(5)
+            elif code == evdev.ecodes.KEY_KP6: scale(6)
+            elif code == evdev.ecodes.KEY_KP7: scale(7)
+            elif code == evdev.ecodes.KEY_KP8: scale(8)
+            elif code == evdev.ecodes.KEY_KP9: scale(9)
 
 button1 = Button(PIN_NUMBER_SCALE)
 button1.when_pressed = next_factor
@@ -162,7 +165,9 @@ button2.when_pressed = invert
 camera = init_camera()
 
 try:
+    devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
     for device in devices:
+        device.grab()
         asyncio.ensure_future(handle_events(device))
     loop = asyncio.get_event_loop()
     loop.run_forever()
