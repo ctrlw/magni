@@ -14,7 +14,9 @@ After the initial setup, the device works fully offline and does not need an int
 ## Hardware
 To build the magnifier, you need at least the following
 * Raspberry Pi
-  * any model will do (Raspberry Pi Zero is nice for its size, but needs specific cables/adapters for camera and USB)
+  * any model will do
+  * Raspberry Pi Zero is nice for its size, but needs specific cables/adapters for camera and USB
+  * Raspberry Pi 4 needs specific cables/adapters and may need a heat-sink or fan
 * Raspberry Pi camera
   * Strongly recommended is an official Raspberry Pi camera v2, due to better image quality and flexible focus
 * Raspberry Pi camera cable
@@ -62,23 +64,19 @@ echo "./magni.py" >> .bashrc
   * Leave nano with Ctrl-x, press “y” to save and enter to update the given file
 
 ### Support hard shut-down
-This step allows to simply unplug the Raspberry Pi without possible damage to the SD card. This should be the last step, as the system will be made read-only.
-```
-wget https://github.com/adafruit/Raspberry-Pi-Installer-Scripts/raw/master/read-only-fs.sh
-sudo bash read-only-fs.sh
-```
-The script asks a couple of questions:
-* Continue? y
-* Enable boot-time read/write jumper? N
-* Install GPIO-halt utility? N
-* Enable kernel panic watchdog? N
-* CONTINUE? y
+This step allows to simply unplug the Raspberry Pi without possible damage to the SD card. This should be the last step, as the system will be made read-only (but it can be undone if needed).
+This feature is now supported out of the box on Raspberry Pi OS, so no extra script is needed anymore.
 
-If you want to do changes after running the script, run the following commands:
-* to enable writing again: `mount -o remount,rw /`
-* to make it read-only again: `mount -o remount,ro /`
+Run `sudo raspi-config`
+* Performance options -> Overlay File System
+  * Enable overlay file system: Yes
+  * Write-protect boot partition: Yes
+  * Reboot? Yes
 
-You can use them to change files like magni.py later, but they will not undo all the changes from the read-only-fs.sh script.
+Now you can still create and modify files locally, but they will not be written to the SD card and disappear on the next reboot.
+If you want to make the system writable again, you can do it in 2 steps with raspi-config:
+* Disable the Overlay File System, so you can write to the file-system
+* If you also want to modify the boot partition, you have to do it in a second step after rebooting
 
 ## Camera focus
 When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. If you’re smart you got a Raspberry Pi camera v2 and do it the easy way, just turning the white ring tool. On the older camera model or cheap alternatives, the lens may be glued and can still be adapted, but you risk breaking the camera.
