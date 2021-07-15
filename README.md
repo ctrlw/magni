@@ -39,24 +39,30 @@ If you use the optional push buttons instead of a numerical keyboard, the script
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal)
 * Run `sudo raspi-config`
   * System options -> Boot / Autologin -> Console Autologin
+  * System options -> Network at boot -> No (speeds up booting)
   * Interface options -> Camera -> Enable
   * System options -> Wireless LAN (if you want to connect from another computer by wifi)
   * Interface options -> SSH -> Enable (only if you want to connect from another computer)
-  * Save and `sudo reboot`
+  * Finish and reboot (<Yes> or `sudo reboot`)
 * After reboot, adapt the camera focus to your setup: `raspivid -f -rot 180 -t 0`
   * If you see the current camera view, and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rot (0, 90, 180, 270) and adapt them later in magni.py
   * If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
   * Use Ctrl-c to get out of the camera view
 * Run the following commands in the terminal:
 ```
-sudo apt-get -y update
-sudo apt-get -y upgrade
-sudo apt-get install -y python3-picamera python3-gpiozero python3-evdev
+sudo apt -y update
+sudo apt -y upgrade
+sudo apt install -y python3-picamera python3-gpiozero python3-evdev
 wget https://github.com/ctrlw/magni/raw/master/magni.py
 chmod +x magni.py
 echo "clear" >> .bashrc
 echo "./magni.py" >> .bashrc
 ```
+* To have a lower-quality fallback when the monitor / TV is switched on *after* the magnifier, edit /boot/config.txt:
+ `sudo nano /boot/config.txt`
+  * Move to the line "#hdmi_force_hotplug=1" and delete the first character (#)
+  * Leave nano with Ctrl-x, press “y” to save and enter to update the given file
+
 * To hide the messages during startup, edit /boot/cmdline.txt:
 `sudo nano /boot/cmdline.txt`
   * Append the following at the end of the line and save the file:
