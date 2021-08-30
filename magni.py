@@ -60,11 +60,10 @@ def scale2roi(scale_factor):
     start = 0.5 - radius
     
     # assure that values are in allowed range (e.g. factor 1 is not supported on bigger screens)
-    start = max(start, 0)
     diameter = min(diameter, 1)
     
-    # y value is always 0, to have the same upper position regardless of scale factor
-    return (start, 0, diameter, diameter)
+    # x and y are always 0, to have the same upper left position regardless of scale factor
+    return (0, 0, diameter, diameter)
     
 
 # react on button pressed
