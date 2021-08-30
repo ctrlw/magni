@@ -125,7 +125,7 @@ async def handle_events(device):
             # mouse buttons
             if code == evdev.ecodes.BTN_MOUSE: next_factor()
             elif code == evdev.ecodes.BTN_RIGHT: invert()
-            elif code == evdev.ecodes.BTN_MIDDLE: save_photo()
+            # elif code == evdev.ecodes.BTN_MIDDLE: save_photo()
 
             # regular keys
             elif code == evdev.ecodes.KEY_Q: quit()
