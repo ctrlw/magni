@@ -18,7 +18,7 @@ To build the magnifier, you need at least the following
   * Raspberry Pi Zero is nice for its size, but needs specific cables/adapters for camera and USB
   * Raspberry Pi 4 needs specific cables/adapters and may need a heat-sink or fan
 * Raspberry Pi camera
-  * Strongly recommended is an official Raspberry Pi camera v2, due to better image quality and flexible focus
+  * Strongly recommended is an official Raspberry Pi camera v2, due to better image quality and flexible focus than the 5MP ones. The high quality camera with additional lenses is not needed
 * Raspberry Pi camera cable
   * only if the standard 15cm cable is too short or you need the smaller cable for Raspberry Pi Zero
 * Micro USB charger
@@ -34,20 +34,23 @@ A slightly more in-depth description of the first 2 hardware setups is given at 
 If you use the optional push buttons instead of a numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour-invert button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
 ## Setup
-* Download [Raspberry Pi OS Lite](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
-* Connect camera
+**Update December 2021: The new Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module, differences depending on the OS version are mentioned in the following steps (see the [documentation](https://www.raspberrypi.com/documentation/accessories/camera.html#libcamera-and-the-legacy-raspicam-camera-stack) for more background).**
+* Download [Raspberry Pi OS **Lite**](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
+* [Connect camera](https://picamera.readthedocs.io/en/release-1.12/quickstart.html)
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal)
+* Since 2021's Raspberry Pi OS "Bullseye", you can setup the camera focus now with `libcamera-still --rotation 180 -t 0`. If you're on an older OS version then skip this for now and follow the other steps first
+  * If you see the current camera view, and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rotation (0, 90, 180, 270) and adapt them later in magni.py
+  * If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
+  * Use Ctrl-c to get out of the camera view
 * Run `sudo raspi-config`
   * System options -> Boot / Autologin -> Console Autologin
   * System options -> Network at boot -> No (speeds up booting)
-  * Interface options -> Camera -> Enable
+  * Interface options -> (Legacy) Camera -> Enable
   * System options -> Wireless LAN (if you want to connect from another computer by wifi)
   * Interface options -> SSH -> Enable (only if you want to connect from another computer)
   * Finish and reboot (<Yes> or `sudo reboot`)
-* After reboot, adapt the camera focus to your setup: `raspivid -f -rot 180 -t 0`
-  * If you see the current camera view, and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rot (0, 90, 180, 270) and adapt them later in magni.py
-  * If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
-  * Use Ctrl-c to get out of the camera view
+* If you're on an older Raspberry Pi OS than 2021's "Bullseye" and thus haven't adapted the camera focus before, you should do it now with `raspivid -f -rot 180 -t 0`
+  * See the steps above about camera focus and quit with Ctrl-c once the image looks good
 * Run the following commands in the terminal:
 ```
 sudo apt -y update
@@ -85,7 +88,7 @@ If you want to make the system writable again, you can do it in 2 steps with ras
 * If you also want to modify the boot partition, you have to do it in a second step after rebooting
 
 ## Camera focus
-When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. If you’re smart you got a Raspberry Pi camera v2 and do it the easy way, just turning the white ring tool. On the older camera model or cheap alternatives, the lens may be glued and can still be adapted, but you risk breaking the camera.
+When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. The  Raspberry Pi camera v2 usually comes with a white ring tool to easily adjust focus. On the older camera model or cheap alternatives, the lens may be glued and can still be adapted, but you risk breaking the camera.
 
 ![Adjust camera focus](docs/camera-focus-300x225.jpg)
 
