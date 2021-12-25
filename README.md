@@ -28,13 +28,14 @@ To build the magnifier, you need at least the following
   * [Lamp setup](docs/magni-lamp-mount.md) (basic and simple)
   * [Flexible arm](docs/magni-flexible-arm-mount.md) with one push-button
   * [Box setup](docs/magni-box-mount.md) with 2 push-buttons
+  * [3d print for Pi Zero](docs/magni-3d-zero.md)
 
 A slightly more in-depth description of the first 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
 If you use the optional push buttons instead of a numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour-invert button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 
 ## Setup
-**Update December 2021: The new Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module, differences depending on the OS version are mentioned in the following steps (see the [documentation](https://www.raspberrypi.com/documentation/accessories/camera.html#libcamera-and-the-legacy-raspicam-camera-stack) for more background).**
+**Update December 2021: The new Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module. Differences depending on the OS version are mentioned in the following steps (see the [documentation](https://www.raspberrypi.com/documentation/accessories/camera.html#libcamera-and-the-legacy-raspicam-camera-stack) for more background).**
 * Download [Raspberry Pi OS **Lite**](https://www.raspberrypi.org/software/operating-systems/) and install on SD card
 * [Connect camera](https://picamera.readthedocs.io/en/release-1.12/quickstart.html)
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal)
