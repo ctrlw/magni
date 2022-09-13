@@ -1,7 +1,7 @@
 # magni
-Software for a simple video magnifier running on Raspberry Pi
+Software for a simple video magnifier running on Raspberry Pi. Click the image for a short demo video.
 
-![Magnifier used to fill a form](docs/form-225x300.jpg)
+[![Preview for demo video of the video magnifier](https://img.youtube.com/vi/_3VD43FgGWs/0.jpg)](https://www.youtube.com/watch?v=_3VD43FgGWs&t=80s "3d printed DIY video magnifier")
 
 ## Description
 This project aims to build a video magnifier based on Raspberry Pi and its camera. It can be used to see printed text or images at a larger scale, or to identify small parts like SMD electronics. The device has to be connected to a monitor which will display the image from the camera at a specific magnification level. The user can step through predefined scale factors with a push-button or the Enter key, and switch to colour-inversion with a second push button or the "/" key.
