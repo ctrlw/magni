@@ -5,73 +5,84 @@ import asyncio
 from datetime import datetime
 import evdev                   # for input from mouse and command line
 from gpiozero import Button    # for external buttons
-from picamera import PiCamera  # Import camera functions
-import sys
-import time
+
+# load available camera lib (picamera on legacy, picamera2 on newer OS) 
+try:
+    from picamera import PiCamera  # Import camera functions
+    print("Using picamera")
+except ImportError:
+    pass
+try:
+    from picamera2 import Picamera2, Preview
+    from libcamera import Transform
+    print("Using picamera2 and libcamera")
+except ImportError:
+    pass
+
+import re                      # for parsing fbset output
+import subprocess              # for calling fbset to detect screen resolution
 
 # you can adapt this script to your specific setup, by setting either
-# DISTANCE_TO_SURFACE_CM or DEFAULT_WIDTH_CM to your local measurements
-# WIDTHS_CM or SCALE_FACTORS can be modified for a fixed set of scale factors
+# SCALE_FACTORS can be modified for a fixed set of scale factors
 # PIN_NUMBER_... can be changed if you connect buttons to different GPIO pins
+
+# Picamera2 needs the screen resolution for preview
+# set default to full hd, will try to read actual values in init_camera
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 
 # rotate view by 180 degrees for the typical use-case with camera behind object
 ROTATION = 180
 
-# distance in cm between camera objective and the surface (e.g. table)
-# adapt this to your setup, or directly set the value DEFAULT_WIDTH_CM below
-DISTANCE_TO_SURFACE_CM = 24.5
-
-# visible width when calling "raspivid -f -rot 180" (measure with a ruler)
-# adapt this to your setup, as it depends on the camera and screen
-DEFAULT_WIDTH_CM = DISTANCE_TO_SURFACE_CM * 0.67
-# uncomment the following line to overwrite with your own measured value
-# DEFAULT_WIDTH_CM = 16.5
-
-# typical line widths to cycle through by pressing the scale button / enter
-# set your desired line widths here, e.g. from the newspaper, typical books or magazines
-WIDTHS_CM = [DEFAULT_WIDTH_CM, 12.5, 9, 5]
-
-
+# DEFAULT_WIDTH_CM = 16
+# WIDTHS_CM = [16, 12.5, 9, 5]
 # magnification when calling raspivid without parameters
 # value is from my initial setup, matters only if you set SCALE_FACTORS manually
-DEFAULT_FACTOR = 2.5
+# DEFAULT_FACTOR = 2.5
+# pre-defined scale factors to cycle through with button/enter
+# SCALE_FACTORS = [DEFAULT_FACTOR * 16 / x for x in WIDTHS_CM] # [2.5, 3.3, 4.5, 8]
 
 # pre-defined scale factors to cycle through with button/enter
-SCALE_FACTORS = [DEFAULT_FACTOR * DEFAULT_WIDTH_CM / x for x in WIDTHS_CM]
-# uncomment the following line if you rather want to define the scale factors manually
-# SCALE_FACTORS = [DEFAULT_FACTOR, 5, 10]
-
+DEFAULT_FACTOR = 1
+SCALE_FACTORS = [DEFAULT_FACTOR, 1.5, 2, 3]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
-
 
 # define GPIO pins for (optional) push buttons
 PIN_NUMBER_SCALE =  4 # physical 7, scale button
 PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
 
-# toggle between normal colours and inverted colours
+# fbset is supported on new and legacy OS
+# shows actual framebuffer resolution instead of physical screen size
+def screen_resolution_fbset():
+    try:
+        result = subprocess.run(['fbset'], capture_output=True)
+        output = result.stdout.decode('utf-8')
+        #  shows resolution e.g. as 'mode "1920x1080"'
+        m = re.search('mode "([0-9]+)x([0-9]+)"', output)
+        if m:
+            width = int(m.group(1))
+            height = int(m.group(2))
+            print('fbset screen resolution (w, h): ', width, height)
+            return width, height
+        else:
+            print('Could not match fbset output:', output)
+    except:
+        pass
+    return SCREEN_WIDTH, SCREEN_HEIGHT
+
+# toggle between normal and inverted colours, only works on legacy OS
 def invert():
     global camera
-    camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'
-
-# convert a scale factor to the values needed by raspivid's roi/crop parameter
-def scale2roi(scale_factor):
-    diameter = DEFAULT_FACTOR / scale_factor
-    radius = diameter / 2
-    start = 0.5 - radius
-    
-    # assure that values are in allowed range (e.g. factor 1 is not supported on bigger screens)
-    diameter = min(diameter, 1)
-    
-    # x and y are always 0, to have the same upper left position regardless of scale factor
-    return (0, 0, diameter, diameter)
-    
+    if hasattr(camera, 'image_effect'):
+        # image_effect is not supported in picamera2
+        camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'    
 
 # react on button pressed
 def next_factor():
     global factor
         
     # find the highest entry in SCALE_FACTORS that is <= current factor
-    # if the current factor is less (due to direct factor input), switch to default value
+    # if the current factor is less due to direct input, switch to default value
     same_or_less = [v for v in SCALE_FACTORS if v <= factor]
     if len(same_or_less) == 0:
         factor = DEFAULT_FACTOR
@@ -89,12 +100,57 @@ def next_factor():
 def scale(new_factor):
     global camera
     global factor
+    global screen
     
     factor = max(new_factor, DEFAULT_FACTOR)
-    #print("Scale factor", factor)
+    # print("Scale factor", factor)
+
+    # update roi value in legacy OS
+    if hasattr(camera, 'crop'):
+        # offset and width / height in range [0,1]
+        diameter = min(1 / factor, 1)
+        camera.crop = (0, 0, diameter, diameter)
+        return
+
+    # update crop in current OS
+    camera_w, camera_h = camera.camera_properties['PixelArraySize']
+    # print('PixelArraySize:', camera_w, camera_h)
+
+    screen_w, screen_h = screen
+    screen_ratio = screen_w / screen_h
+    crop_w = int(camera_w / factor)
+    crop_h = min(int(crop_w / screen_ratio), camera_h)
+
+    # always start at the top left position regardless of scale factor
+    top_x = 0
+    top_y = 0
+    if ROTATION == 180:
+        # if the camera is rotated, always start at the lower bottom
+        top_x = camera_w - crop_w
+        top_y = camera_h - crop_h
+
+    window = [top_x, top_y, crop_w, crop_h]
+    # print(factor, window)
+    camera.set_controls({'ScalerCrop': window})
     
-    # update crop / roi value
-    camera.crop = scale2roi(factor)
+    # focus on cropped area if camera supports autofocus
+    if 'AfMode' in camera.camera_controls:
+        camera.set_controls({'AfWindows': [(top_x, top_y, crop_w, crop_h)]})
+        camera.autofocus_cycle()
+
+# focus on whole sensor field regardless of current preview area
+def focus():
+    global camera
+
+    # update autofocus (only supported on picamera2)
+    if hasattr(camera, 'camera_controls') and 'AfMode' in camera.camera_controls:
+        print('ScalerCrop', camera.camera_controls['ScalerCrop'])
+        print('PixelArrayActiveAreas', camera.camera_properties['PixelArrayActiveAreas'])
+        print('PixelArraySize:', camera.camera_properties['PixelArraySize'])
+        x, y, w, h = camera.camera_controls['ScalerCrop'][-1]
+        print('focus:', x, y, w, h)
+        camera.set_controls({'AfWindows': [(0, 0, w, h)]})
+        camera.autofocus_cycle()
 
 def quit():
     global devices    
@@ -110,11 +166,27 @@ def save_photo():
     camera.start_preview()
 
 # start displaying the default camera view
-def init_camera():
-    camera = PiCamera()
-    camera.rotation = ROTATION
-    camera.start_preview()
-    return camera
+def init_camera(width, height):
+    try:
+        # for current OS use picamera2
+        picam2 = Picamera2()
+        config = picam2.create_preview_configuration({'size': (width, height)})
+        picam2.configure(config)
+        transform = Transform()
+        if ROTATION == 180:
+            transform = Transform(hflip=1, vflip=1)
+        picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height,
+            transform=transform)
+        picam2.start()
+        print('Started picamera2', ROTATION)
+        return picam2
+    except:
+        # for legacy OS use picamera
+        camera = PiCamera()
+        camera.rotation = ROTATION
+        camera.start_preview()
+        print('Started legacy picamera', ROTATION)
+        return camera
 
 
 async def handle_events(device):
@@ -127,6 +199,7 @@ async def handle_events(device):
             # elif code == evdev.ecodes.BTN_MIDDLE: save_photo()
 
             # regular keys
+            elif code == evdev.ecodes.KEY_F: focus()
             elif code == evdev.ecodes.KEY_Q: quit()
             elif code == evdev.ecodes.KEY_ESC: quit()
             elif code == evdev.ecodes.KEY_ENTER: next_factor()
@@ -161,7 +234,10 @@ button1.when_pressed = next_factor
 button2 = Button(PIN_NUMBER_COLOR)
 button2.when_pressed = invert
 
-camera = init_camera()
+screen = screen_resolution_fbset()
+width, height = screen
+camera = init_camera(width, height)
+scale(factor)
 
 try:
     devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
