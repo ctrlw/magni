@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 try:
-    from picamera2 import Picamera2, Preview
+    from picamera2 import Picamera2, Preview, MappedArray
     from libcamera import Transform
     print("Using picamera2 and libcamera")
 except ImportError:
@@ -27,22 +27,17 @@ import subprocess              # for calling fbset to detect screen resolution
 # PIN_NUMBER_... can be changed if you connect buttons to different GPIO pins
 
 # Picamera2 needs the screen resolution for preview
-# set default to full hd, will try to read actual values in init_camera
+# set default to full hd, will try to use actual values in init_camera
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
 # rotate view by 180 degrees for the typical use-case with camera behind object
 ROTATION = 180
 
-# DEFAULT_WIDTH_CM = 16
-# WIDTHS_CM = [16, 12.5, 9, 5]
-# magnification when calling raspivid without parameters
-# value is from my initial setup, matters only if you set SCALE_FACTORS manually
-# DEFAULT_FACTOR = 2.5
-# pre-defined scale factors to cycle through with button/enter
-# SCALE_FACTORS = [DEFAULT_FACTOR * 16 / x for x in WIDTHS_CM] # [2.5, 3.3, 4.5, 8]
-
-# pre-defined scale factors to cycle through with button/enter
+# Pre-defined scale factors to cycle through with button/enter
+# These factors are camera pixels to screen pixels ratio, the actual
+# magnification depends also on the camera, the screen size and the distance
+# between camera and object
 DEFAULT_FACTOR = 1
 SCALE_FACTORS = [DEFAULT_FACTOR, 1.5, 2, 3]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
@@ -70,12 +65,26 @@ def screen_resolution_fbset():
         pass
     return SCREEN_WIDTH, SCREEN_HEIGHT
 
-# toggle between normal and inverted colours, only works on legacy OS
+def picamera2_invert(request):
+    # picamera2 doesn't support image_effect, need to invert manually instead
+    if hasattr(invert, 'is_inverted') and invert.is_inverted:
+        with MappedArray(request, "main") as m:
+            array = m.array
+            for i in range(len(array)):
+                array[i] = 255 - array[i]
+
+
+# toggle between normal and inverted colours
 def invert():
     global camera
     if hasattr(camera, 'image_effect'):
         # image_effect is not supported in picamera2
-        camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'    
+        camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'
+    else:
+        # toggle state variable which is used in picamera2_invert
+        if not hasattr(invert, 'is_inverted'):
+            invert.is_inverted = False
+        invert.is_inverted = not invert.is_inverted
 
 # react on button pressed
 def next_factor():
@@ -175,6 +184,7 @@ def init_camera(width, height):
         transform = Transform()
         if ROTATION == 180:
             transform = Transform(hflip=1, vflip=1)
+        picam2.pre_callback = picamera2_invert
         picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height,
             transform=transform)
         picam2.start()
