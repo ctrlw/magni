@@ -38,8 +38,8 @@ ROTATION = 180
 # These factors are camera pixels to screen pixels ratio, the actual
 # magnification depends also on the camera, the screen size and the distance
 # between camera and object
-DEFAULT_FACTOR = 1
-SCALE_FACTORS = [DEFAULT_FACTOR, 1.5, 2, 3]
+DEFAULT_FACTOR = 2
+SCALE_FACTORS = [DEFAULT_FACTOR, 3, 4.5, 8]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
 # define GPIO pins for (optional) push buttons
