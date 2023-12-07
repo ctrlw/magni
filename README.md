@@ -37,7 +37,7 @@ If you use the optional push buttons instead of a USB mouse or numerical keyboar
 While physical buttons are nice, this involves soldering and they may be susceptible to electro-magnetic noise (e.g. getting triggered from switching some device on/off, or even from static charges from my Ikea Markus chair).
 
 ## Setup
-**2021's Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module. The following steps assume you use the latest OS, but the older "Buster" OS is still available as "Legacy OS", and Bullseye also allows to set the camera as Legacy camera in raspi-config (Interface options -> (Legacy) Camera -> Enable)**
+**2021's Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module. The following steps assume you use the latest OS, but the older "Buster" OS is still available as "Legacy OS", and Bullseye also allows to set the camera as Legacy camera in raspi-config (Interface options -> (Legacy) Camera -> Enable). The python script should work with both (though camera v3 autofocus is only supported on new OS), but the setup for legacy OS is slightly different and can be found in the git history of this file.**
 * Download [Raspberry Pi OS **Lite**](https://www.raspberrypi.org/software/operating-systems/) and install on SD card, e.g. with Raspberry Pi Imager. The 32 bit version is usually fine
 * [Connect camera](https://www.raspberrypi.com/documentation/accessories/camera.html#connecting-the-camera)
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal). Using the default credentials is not secure, so change it if you will connect the device to the internet or have it accessible to strangers
