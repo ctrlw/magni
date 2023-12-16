@@ -22,23 +22,23 @@ except ImportError:
 import re                      # for parsing fbset output
 import subprocess              # for calling fbset to detect screen resolution
 
-# you can adapt this script to your specific setup, by setting either
+# You can adapt this script to your specific setup, by changing the constants 
 # SCALE_FACTORS can be modified for a fixed set of scale factors
 # PIN_NUMBER_... can be changed if you connect buttons to different GPIO pins
 
 # Picamera2 needs the screen resolution for preview
-# set default to full hd, will try to use actual values in init_camera
+# Default is full HD, will try to read actual values in init_camera
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
-# rotate view by 180 degrees for the typical use-case with camera behind object
+# Rotate view by 180 degrees for the typical use-case with camera behind object
 ROTATION = 180
 
 # Pre-defined scale factors to cycle through with button/enter
 # These factors are camera pixels to screen pixels ratio, the actual
 # magnification depends also on the camera, the screen size and the distance
 # between camera and object
-DEFAULT_FACTOR = 2
+DEFAULT_FACTOR = 1.5
 SCALE_FACTORS = [DEFAULT_FACTOR, 3, 4.5, 8]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
@@ -106,6 +106,7 @@ def next_factor():
     
     
 # change to given scale factor
+# always start in top left corner to maintain the same reading position
 def scale(new_factor):
     global camera
     global factor
@@ -114,37 +115,27 @@ def scale(new_factor):
     factor = max(new_factor, DEFAULT_FACTOR)
     # print("Scale factor", factor)
 
-    # update roi value in legacy OS
+    # in legacy OS update roi value
     if hasattr(camera, 'crop'):
         # offset and width / height in range [0,1]
         diameter = min(1 / factor, 1)
         camera.crop = (0, 0, diameter, diameter)
         return
 
-    # update crop in current OS
-    camera_w, camera_h = camera.camera_properties['PixelArraySize']
-    # print('PixelArraySize:', camera_w, camera_h)
-
+    # in current OS compute pixel positions in sensor based on scale factor and screen ratio
     screen_w, screen_h = screen
     screen_ratio = screen_w / screen_h
+    camera_w, camera_h = camera.camera_properties['PixelArraySize']
+
     crop_w = int(camera_w / factor)
     crop_h = min(int(crop_w / screen_ratio), camera_h)
 
-    # always start at the top left position regardless of scale factor
-    top_x = 0
-    top_y = 0
-    if ROTATION == 180:
-        # if the camera is rotated, always start at the lower bottom
-        top_x = camera_w - crop_w
-        top_y = camera_h - crop_h
-
-    window = [top_x, top_y, crop_w, crop_h]
-    # print(factor, window)
+    window = (0, 0, crop_w, crop_h)
     camera.set_controls({'ScalerCrop': window})
     
     # focus on cropped area if camera supports autofocus
     if 'AfMode' in camera.camera_controls:
-        camera.set_controls({'AfWindows': [(top_x, top_y, crop_w, crop_h)]})
+        camera.set_controls({'AfWindows': [window]})
         camera.autofocus_cycle()
 
 # focus on whole sensor field regardless of current preview area
@@ -179,14 +170,11 @@ def init_camera(width, height):
     try:
         # for current OS use picamera2
         picam2 = Picamera2()
-        config = picam2.create_preview_configuration({'size': (width, height)})
+        transform = Transform(hflip=1, vflip=1) if ROTATION == 180 else Transform()
+        config = picam2.create_preview_configuration({'size': (width, height)}, transform=transform)
         picam2.configure(config)
-        transform = Transform()
-        if ROTATION == 180:
-            transform = Transform(hflip=1, vflip=1)
         picam2.pre_callback = picamera2_invert
-        picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height,
-            transform=transform)
+        picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
         picam2.start()
         print('Started picamera2', ROTATION)
         return picam2
