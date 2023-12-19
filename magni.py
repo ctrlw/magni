@@ -158,12 +158,18 @@ def quit():
     for dev in devices:
         dev.ungrab()
 
-def save_photo():
+def save_photo(filename = ''):
     global camera
-    camera.stop_preview()
-    timestamp = datetime.now().isoformat()
-    camera.capture('/home/pi/{}.jpg'.format(timestamp))
-    camera.start_preview()
+    if len(filename) == 0:
+        timestamp = datetime.now().isoformat()
+        filename = f'/home/pi/{timestamp}.jpg'
+    if hasattr(camera, 'capture_file'):
+        # saves the preview stream as an image
+        camera.capture_file(filename)
+    else:
+        camera.stop_preview()
+        camera.capture(filename)
+        camera.start_preview()
 
 # start displaying the default camera view
 def init_camera(width, height):
@@ -202,6 +208,7 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_ESC: quit()
             elif code == evdev.ecodes.KEY_ENTER: next_factor()
             elif code == evdev.ecodes.KEY_SLASH: invert()
+            elif code == evdev.ecodes.KEY_S: save_photo()
             elif code == evdev.ecodes.KEY_0: scale(10)
             elif code == evdev.ecodes.KEY_1: scale(1)
             elif code == evdev.ecodes.KEY_2: scale(2)
