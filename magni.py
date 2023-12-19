@@ -19,8 +19,10 @@ try:
 except ImportError:
     pass
 
+import os                      # for background OCR and TTS process
 import re                      # for parsing fbset output
-import subprocess              # for calling fbset to detect screen resolution
+import signal                  # to kill background process 
+import subprocess              # for calling fbset to detect screen resolution and readout
 
 # You can adapt this script to your specific setup, by changing the constants 
 # SCALE_FACTORS can be modified for a fixed set of scale factors
@@ -42,9 +44,18 @@ DEFAULT_FACTOR = 1.5
 SCALE_FACTORS = [DEFAULT_FACTOR, 3, 4.5, 8]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
+# Language codes for readout
+MID_BUTTON_READOUT = False # True to support readout on middle mouse button
+OCR_LANG = 'eng'   # Tesseract's character recognition, may need installation, e.g. 'eng'
+TTS_LANG = 'en-GB' # Pico's Text to Speech, may need installation, e.g. 'en-GB'
+
+
 # define GPIO pins for (optional) push buttons
 PIN_NUMBER_SCALE =  4 # physical 7, scale button
 PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
+
+# Readout uses a background process to run OCR and TTS
+bg_process = None
 
 # fbset is supported on new and legacy OS
 # shows actual framebuffer resolution instead of physical screen size
@@ -171,6 +182,17 @@ def save_photo(filename = ''):
         camera.capture(filename)
         camera.start_preview()
 
+def readout():
+    global factor
+    global bg_process 
+    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && aplay tmp.wav'
+    if bg_process != None and bg_process.poll() == None:
+        # if background process is running, just kill it and do nothing
+        os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
+    else:
+        save_photo('tmp.jpg')
+        bg_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+
 # start displaying the default camera view
 def init_camera(width, height):
     try:
@@ -200,7 +222,7 @@ async def handle_events(device):
             # mouse buttons
             if code == evdev.ecodes.BTN_MOUSE: next_factor()
             elif code == evdev.ecodes.BTN_RIGHT: invert()
-            # elif code == evdev.ecodes.BTN_MIDDLE: save_photo()
+            elif code == evdev.ecodes.BTN_MIDDLE: readout() if MID_BUTTON_READOUT else save_photo()
 
             # regular keys
             elif code == evdev.ecodes.KEY_F: focus()
@@ -209,6 +231,7 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_ENTER: next_factor()
             elif code == evdev.ecodes.KEY_SLASH: invert()
             elif code == evdev.ecodes.KEY_S: save_photo()
+            elif code == evdev.ecodes.KEY_R: readout()
             elif code == evdev.ecodes.KEY_0: scale(10)
             elif code == evdev.ecodes.KEY_1: scale(1)
             elif code == evdev.ecodes.KEY_2: scale(2)
@@ -253,5 +276,7 @@ try:
     loop.run_forever()
 
 finally:
+    if bg_process != None and bg_process.poll() == None:
+        os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
     camera.stop_preview()
     camera.close()
