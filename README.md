@@ -1,4 +1,6 @@
 # magni
+[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ctrlw)
+
 Software for a simple video magnifier running on Raspberry Pi. Click the image for a short demo video.
 
 [![Preview for demo video of the video magnifier](https://img.youtube.com/vi/_3VD43FgGWs/0.jpg)](https://www.youtube.com/watch?v=_3VD43FgGWs&t=80s "3d printed DIY video magnifier")
