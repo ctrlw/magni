@@ -14,11 +14,11 @@ After the initial setup, the device works fully offline and does not need an int
 ## Hardware
 To build the magnifier, you need at least the following
 * Raspberry Pi
-  * Any model you have will do, but if you're going to buy one I'd recommend the Pi 3 or Zero 2 W
+  * Any model you have will do (except Pi Pico), but if you're going to buy one I'd recommend the Pi 3 or Zero 2 W
   * Raspberry Pi Zeros are nice for their size, but need specific cables/adapters for camera and USB
-  * Raspberry Pi 4 and 5 need specific cables/adapters and may also need cooling. They are overpowered for the magnification task but could be handy for Text-To-Speech (reading out content)
+  * Raspberry Pi 4 and 5 need specific cables/adapters and may also need cooling. They are overpowered for the magnification task but could be faster for Text-To-Speech (reading out content)
 * Raspberry Pi camera
-  * Strongly recommended is an official Raspberry Pi camera v2 or v3, due to better image quality and flexible focus compared to the original 5MP ones. The v3 has autofocus which can be handy when supporting different distances to surface, however the autofocus is not always accurate, so a v2 camera that is tuned to the right distance can be the better choice if you have a fixed distance to the surface. The high quality camera with additional lenses is not needed
+  * Strongly recommended is an official Raspberry Pi camera v2 or v3, due to better image quality and flexible focus compared to the original 5MP ones. The v3 has autofocus which can be handy when supporting different distances to surface, however the autofocus is not always accurate, so a v2 camera that is tuned to the right distance can be the better choice if you have a fixed distance to the surface. The high quality camera with additional lenses is not needed. The v3 version with Wide angle could be useful for close distances but has aberrations in the corners, so the regular v3 is probably the better choice.
 * Raspberry Pi camera cable
   * only if the standard 15cm cable is too short or you need the smaller cable for Raspberry Pi Zero
 * Micro USB charger. For higher specced Raspberry Pi models (3 upwards) the official chargers are recommended due to better power stability
@@ -46,10 +46,6 @@ While physical buttons are nice, this involves soldering and they may be suscept
   * System options -> Wireless LAN (if you want to connect from another computer by wifi)
   * Interface options -> SSH -> Enable (only if you want to connect from another computer)
   * Finish and reboot (<Yes> or `sudo reboot`)
-* If you have an older camera than the v3 with its autofocus, you have to setup the camera focus manually. Run `libcamera-hello --rotation 180 -t 0`
-  * If you see the current camera view, and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rotation (0, 180) and adapt the ROTATION value in magni.py accordingly
-  * If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
-  * Use Ctrl-c to get out of the camera view
 * Run the following commands in the terminal:
 ```
 sudo apt update && sudo apt -y upgrade
@@ -60,8 +56,8 @@ echo "clear" >> .bashrc
 echo "./magni.py" >> .bashrc
 ```
 * To have a lower-quality fallback when the monitor / TV is switched on *after* the magnifier, edit /boot/config.txt:
- `sudo nano /boot/config.txt`
-  * Move to the line "#hdmi_force_hotplug=1" and delete the first character (#)
+ `sudo nano /boot/config.txt`. This doesn't seem supported in the latest OS anymore.
+  * Move to the line `#hdmi_force_hotplug=1` and delete the first character (#)
   * Leave nano with Ctrl-x, press “y” to save and enter to update the given file
 
 * To hide the messages during startup, edit /boot/cmdline.txt:
@@ -70,9 +66,33 @@ echo "./magni.py" >> .bashrc
 ` logo.nologo quiet splash`
   * Leave nano with Ctrl-x, press “y” to save and enter to update the given file
 
+### Support reading out the visible text (OCR + TTS)
+This optional feature is a very basic approach to read out any text that is visible on the screen. It's not enabled by default but gets triggered when pressing "r" on a connected keyboard, or from the middle button of the mouse after you've set `MID_BUTTON_READOUT = True` in the magni.py script. Pressing the key again while it's still processing stops the background process.
+
+All processing happens on the device itself (no internet needed), so better Raspberry Pi models will compute results faster. This feature is very sensitive to image quality and correct alignment, so ensuring good light, clear focus and horizontal text is necessary for reasonable results.
+
+To make this work there are some extra dependencies. For Text to speech (TTS) we use pico2wave which is not included in the Raspberry Pi OS sources, so we have to add upstream Debian sources.
+```
+echo "deb [arch=armhf, trusted=yes] http://deb.debian.org/debian bookworm main contrib non-free" | sudo tee -a /etc/apt/sources.list
+sudo apt update && sudo apt install -y tesseract-ocr libttspico-utils
+wget https://github.com/ctrlw/magni/raw/master/plop.wav
+```
+The current OS (in late 2023) is based on bookworm. If you're on a different version you may have to adapt the first line accordingly.
+
+For other languages than English you need to install the related language packs, e.g. for German:
+```
+sudo apt install -y tesseract-ocr-deu
+```
+and also update the language in magni.py, e.g.:
+```
+OCR_LANG = 'deu'   # Tesseract's character recognition, may need installation, e.g. 'eng'
+TTS_LANG = 'de-DE' # Pico's Text to Speech, may need installation, e.g. 'en-GB'
+```
+
+Sound may come through HDMI if you have a screen with speakers, or through the headphone jack of some models like the Pi 3. This can be changed in `sudo raspi-config` under System options -> Audio -> Headphones / HDMI. You can test that sound works running the built-in `speaker-test`.
+
 ### Support hard shut-down
-This step allows to simply unplug the Raspberry Pi without possible damage to the SD card. This should be the last step, as the system will be made read-only (but it can be undone if needed).
-This feature is now supported out of the box on Raspberry Pi OS, so no extra script is needed anymore.
+This step allows to simply unplug the Raspberry Pi without possible damage to the SD card. This should be the last step in the setup, as the system will be made read-only (but it can be undone if needed).
 
 Run `sudo raspi-config`
 * Performance options -> Overlay File System
@@ -90,6 +110,12 @@ If you want to make the system writable again, you can do it in 2 steps with ras
 
 When everything is in place, adjust the focus till a letter under the camera looks sharp. Then try a book and maybe adjust. Not all objects are flat. The  Raspberry Pi camera v2 usually comes with a white ring tool to easily adjust focus. On the older camera model or cheap alternatives, the lens may be glued and can still be adapted, but you risk breaking the camera.
 
+You can do this with the magni.py script, or run `libcamera-hello --rotation 180 -t 0`:
+* If you see the current camera view and it's at the same angle that you have from above (e.g. it’s not upside down), you’re good, otherwise try different values for rotation (0, 180) and adapt the ROTATION value in magni.py accordingly
+* If the image is blurry you should adjust the focus, simply turning the lens with the plastic “wheel” that comes with the Pi camera v2
+* Use Ctrl-c to get out of libcamera-hello (or Esc to leave the magni script)
+
+
 ![Adjust camera focus](docs/camera-focus-300x225.jpg)
 
 ## Modifications
@@ -98,8 +124,10 @@ You can easily adapt magni.py to your own setup and needs:
 * `PIN_NUMBER_SCALE`: Set the (BCM) GPIO pin number where you connect the optional scale push-button
 * `PIN_NUMBER_COLOR`: Set the (BCM) GPIO pin number where you connect the optional colour-mode push-button
 * `ROTATION`: Change the value to the camera rotation in your setup if the camera is not placed behind the object (supports 0, 180; picamera on legacy OS also allowed 90 and 270 but this isn't the case on newer OS versions)
+* `MID_BUTTON_READOUT`: Defines what happens when pressing the middle button of a mouse. `True` reads out the text in the preview, `False` saves the preview as an image (name is the current timestamp)
 
 ## Limitations
 * Magnification is done in software, so scale factors above 10 tend to be noisy
-* On older cameras the camera focus is fixed, so it cannot adapt to objects that are much closer or further away. However, v3 supports autofocus
+* On older cameras the camera focus is fixed, so it cannot adapt to objects that are much closer or further away. Pi camera v3 supports autofocus but it's often not that accurate
 * It may take a minute from power on till the picture is shown (depending on model and SD card)
+* The readout feature is very basic and mostly a proof of concept
