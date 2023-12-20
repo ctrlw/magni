@@ -37,7 +37,7 @@ If you use the optional push buttons instead of a USB mouse or numerical keyboar
 While physical buttons are nice, this involves soldering and they may be susceptible to electro-magnetic noise (e.g. getting triggered from switching some device on/off, or even from static charges from my Ikea Markus chair).
 
 ## Setup
-**2021's Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module. The following steps assume you use the latest OS, but the older "Buster" OS is still available as "Legacy OS", and Bullseye also allows to set the camera as Legacy camera in raspi-config (Interface options -> (Legacy) Camera -> Enable). The python script should work with both (though camera v3 autofocus is only supported on new OS), but the setup for legacy OS is slightly different and can be found in the git history of this file.**
+**2021's Raspberry Pi OS "Bullseye" introduced some incompatible changes for the camera module. The following steps assume you use the latest OS, but the older "Bullseye" OS is still available as "Legacy OS" and allows to set the camera as Legacy camera in raspi-config (Interface options -> (Legacy) Camera -> Enable). The python script should work with both but the setup for legacy camera support is slightly different and can be found below.**
 * Download [Raspberry Pi OS **Lite**](https://www.raspberrypi.org/software/operating-systems/) and install on SD card, e.g. with Raspberry Pi Imager. The 32 bit version is usually fine
 * [Connect camera](https://www.raspberrypi.com/documentation/accessories/camera.html#connecting-the-camera)
 * Login with default user “pi”, password “raspberry” (if on desktop, open a terminal). Using the default credentials is not secure, so change it if you will connect the device to the internet or have it accessible to strangers
@@ -66,6 +66,15 @@ echo "./magni.py" >> .bashrc
 ` logo.nologo quiet splash`
   * Leave nano with Ctrl-x, press “y” to save and enter to update the given file
 
+### Legacy OS
+The setup is the same as above with the following exceptions:
+* In `sudo raspi-config` also enable Legacy camera support: Interface options -> Legacy Camera -> Yes
+* When installing python libraries with apt, install `python3-picamera` instead of `python3-picamera2`
+* For Readout (see below) use `bullseye` instead of `bookworm`. However, the area being read differs from the visible preview.
+* You can use `libcamera-still` and `raspistill` instead of `libcamera-hello`
+
+If you enable Legacy camera support, v3 cameras are not supported (at all, not just the autofocus!). The main advantage with legacy camera is the faster colour inversion, which can be otherwise slow on older models like the original Pi Zero or the Raspberry Pi models before the Pi 3.
+
 ### Support reading out the visible text (OCR + TTS)
 This optional feature is a very basic approach to read out any text that is visible on the screen. It's not enabled by default but gets triggered when pressing "r" on a connected keyboard, or from the middle button of the mouse after you've set `MID_BUTTON_READOUT = True` in the magni.py script. Pressing the key again while it's still processing stops the background process.
 
@@ -77,7 +86,7 @@ echo "deb [arch=armhf, trusted=yes] http://deb.debian.org/debian bookworm main c
 sudo apt update && sudo apt install -y tesseract-ocr libttspico-utils
 wget https://github.com/ctrlw/magni/raw/master/plop.wav
 ```
-The current OS (in late 2023) is based on bookworm. If you're on a different version you may have to adapt the first line accordingly.
+The current OS (in late 2023) is based on bookworm. If you're on a different version you may have to adapt the first line accordingly, e.g. replace `bookworm` with `bullseye` if you're on the Legacy OS.
 
 For other languages than English you need to install the related language packs, e.g. for German:
 ```
