@@ -14,7 +14,7 @@ except ImportError:
     pass
 try:
     from picamera2 import Picamera2, Preview, MappedArray
-    from libcamera import Transform
+    from libcamera import controls, Transform
     print("Using picamera2 and libcamera")
 except ImportError:
     pass
@@ -35,6 +35,11 @@ SCREEN_HEIGHT = 1080
 
 # Rotate view by 180 degrees for the typical use-case with camera behind object
 ROTATION = 180
+
+# Distance in cm between camera objective and the surface (e.g. table)
+# Adapt this if you have a camera v3 in fixed setup and want to fix the focus
+# The default None will run autofocus on each change of magnification
+DISTANCE_TO_SURFACE_CM = None # replace with your distance, e.g. 24.5
 
 # Pre-defined scale factors to cycle through with button/enter
 # These factors are camera pixels to screen pixels ratio, the actual
@@ -145,7 +150,8 @@ def scale(new_factor):
     camera.set_controls({'ScalerCrop': window})
     
     # focus on cropped area if camera supports autofocus
-    if 'AfMode' in camera.camera_controls:
+    if 'AfMode' in camera.camera_controls and DISTANCE_TO_SURFACE_CM is None:
+        camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Windows})
         camera.set_controls({'AfWindows': [window]})
         camera.autofocus_cycle()
 
@@ -155,12 +161,7 @@ def focus():
 
     # update autofocus (only supported on picamera2)
     if hasattr(camera, 'camera_controls') and 'AfMode' in camera.camera_controls:
-        print('ScalerCrop', camera.camera_controls['ScalerCrop'])
-        print('PixelArrayActiveAreas', camera.camera_properties['PixelArrayActiveAreas'])
-        print('PixelArraySize:', camera.camera_properties['PixelArraySize'])
-        x, y, w, h = camera.camera_controls['ScalerCrop'][-1]
-        print('focus:', x, y, w, h)
-        camera.set_controls({'AfWindows': [(0, 0, w, h)]})
+        camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Auto})
         camera.autofocus_cycle()
 
 def quit():
@@ -205,6 +206,16 @@ def init_camera(width, height):
         picam2.pre_callback = picamera2_invert
         picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
         picam2.start()
+        if 'AfMode' in picam2.camera_controls:
+            if DISTANCE_TO_SURFACE_CM is None:
+                # if no distance given, use autofocus on magnification change
+                picam2.set_controls({'AfMode': controls.AfModeEnum.Auto})
+                picam2.set_controls({'AfSpeed': controls.AfSpeedEnum.Fast})
+            else:
+                # set focus to the given fixed distance
+                picam2.set_controls({'AfMode': controls.AfModeEnum.Manual})
+                picam2.set_controls({'LensPosition': 100 / DISTANCE_TO_SURFACE_CM})
+
         print('Started picamera2', ROTATION)
         return picam2
     except:
