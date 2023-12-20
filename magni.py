@@ -185,11 +185,12 @@ def save_photo(filename = ''):
 def readout():
     global factor
     global bg_process 
-    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && aplay tmp.wav'
+    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && aplay plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && aplay tmp.wav'
     if bg_process != None and bg_process.poll() == None:
         # if background process is running, just kill it and do nothing
         os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
     else:
+        subprocess.call('aplay plop.wav', shell=True)
         save_photo('tmp.jpg')
         bg_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
