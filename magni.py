@@ -49,10 +49,9 @@ DEFAULT_FACTOR = 1.5
 SCALE_FACTORS = [DEFAULT_FACTOR, 3, 4.5, 8]
 factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 
-# Language codes for readout
-MID_BUTTON_READOUT = False # True to support readout on middle mouse button
-OCR_LANG = 'eng'   # Tesseract's character recognition, may need installation, e.g. 'eng'
-TTS_LANG = 'en-GB' # Pico's Text to Speech, may need installation, e.g. 'en-GB'
+# Language codes for readout, need to be installed on your system
+OCR_LANG = 'eng'   # Tesseract's character recognition: eng, deu, spa, fra, ita
+TTS_LANG = 'en-GB' # Pico's Text to Speech: en-GB, en-US, de-DE, es-ES, fr-FR, it-IT
 
 
 # define GPIO pins for (optional) push buttons
@@ -233,7 +232,7 @@ async def handle_events(device):
             # mouse buttons
             if code == evdev.ecodes.BTN_MOUSE: next_factor()
             elif code == evdev.ecodes.BTN_RIGHT: invert()
-            elif code == evdev.ecodes.BTN_MIDDLE: readout() if MID_BUTTON_READOUT else save_photo()
+            elif code == evdev.ecodes.BTN_MIDDLE: readout()
 
             # regular keys
             elif code == evdev.ecodes.KEY_F: focus()
