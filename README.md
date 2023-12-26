@@ -56,6 +56,14 @@ The setup can be built in different ways, so let your creativity flow. Here are 
 * [Box setup](docs/magni-box-mount.md) with 2 push-buttons
 * [3d print for Pi Zero](docs/magni-3d-zero.md)
 
+![Simple lamp setup](docs/lamp-front-400x300.jpg)
+![Flexible wood arm](docs/wood-side-225x300.jpg)
+![Board on bottle](docs/bottle-wood-225x300.jpg)
+![Box setup with push buttons](docs/box-magni-with-book-400x300.jpg)
+![3d print for Pi Zero](docs/magni3d-225x300.jpg)
+![3d print for Pi Zero b/w](docs/magni3d-bw-225x300.jpg)
+![3d print on monitor](docs/screen3d-400x300.jpg)
+
 A slightly more in-depth description of the first 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
 If you use the optional push buttons instead of a USB mouse or numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour-invert button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
