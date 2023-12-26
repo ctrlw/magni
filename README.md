@@ -1,9 +1,11 @@
 # magni
 [![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ctrlw)
 
-Software for a simple video magnifier running on Raspberry Pi. Click the image for a short demo video.
+Software for a simple video magnifier running on Raspberry Pi. The first video demonstrates magnification and colour inversion, the second reading out text.
 
-[![Preview for demo video of the video magnifier](https://img.youtube.com/vi/_3VD43FgGWs/0.jpg)](https://www.youtube.com/watch?v=_3VD43FgGWs&t=80s "3d printed DIY video magnifier")
+[![Demo of video magnifier with magnification levels and colour inversion](docs/magni_scale_invert_thumb.jpg)](https://youtu.be/32cXs6KolWk "DIY video magnifier demo scaling text and inverting colours")
+[![Demo of video magnifier reading out text from a book](docs/magni_readout_thumb.jpg)](https://youtu.be/zVkWfopQ86A "DIY video magnifier reading out text from a book")
+
 
 ## Description
 This project aims to build a video magnifier based on Raspberry Pi and its camera. It can be used to see printed text or images at a larger scale, or to identify small parts like SMD electronics. The device has to be connected to a monitor which displays the magnified image from the camera. The user can step through predefined scale factors with a button or the Enter key, and toggle colour-inversion with a second button or the "/" key. There's also basic support for reading out text (either English, Spanish, French, German or Italian).
