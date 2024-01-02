@@ -127,6 +127,7 @@ def scale(new_factor):
     global factor
     global screen
     
+    factor = new_factor
     # print("Scale factor", factor)
 
     # in legacy OS update roi value
