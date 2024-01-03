@@ -36,6 +36,10 @@ SCREEN_HEIGHT = 1080
 # Rotate view by 180 degrees for the typical use-case with camera behind object
 ROTATION = 180
 
+# Increase contrast to make text more readable
+# 1 is default, bigger numbers increase contrast
+CONTRAST = 1
+
 # Distance in cm between camera objective and the surface (e.g. table)
 # Adapt this if you have a camera v3 in fixed setup and want to fix the focus
 # The default None will run autofocus on each change of magnification
@@ -215,6 +219,7 @@ def init_camera(width, height):
         picam2.pre_callback = picamera2_invert
         picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
         picam2.start()
+        picam2.set_controls({'Contrast': CONTRAST})
         if 'AfMode' in picam2.camera_controls:
             if DISTANCE_TO_SURFACE_CM is None:
                 # if no distance given, use autofocus on magnification change
