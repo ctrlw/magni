@@ -134,6 +134,7 @@ TTS_LANG = 'de-DE' # Pico's Text to Speech: en-GB, en-US, de-DE, es-ES, fr-FR, i
 ```
 
 Sound may come through HDMI if you have a screen with speakers, or through the headphone jack of some models like the Pi 3. This can be changed in `sudo raspi-config` under System options -> Audio -> Headphones / HDMI. You can test that sound works running the built-in `speaker-test`.
+There seems to be an issue where [audio via HDMI doesn't work as expected](https://forums.raspberrypi.com/viewtopic.php?t=351718). As a workaround you can force `aplay` to use HDMI output by uncommenting the second AUDIO line in the script to show `AUDIO = 'aplay -D sysdefault:CARD=vc4hdmi'` (if `speaker-test -D sysdefault:CARD=vc4hdmi` works).
 
 ### Support hard shut-down
 This step allows to simply unplug the Raspberry Pi without possible damage to the SD card. This should be the last step in the setup, as the system will be made read-only (but it can be undone if needed).
@@ -170,6 +171,7 @@ You can easily adapt magni.py to your own setup and needs:
 * `ROTATION`: Change the value to the camera rotation in your setup if the camera is not placed behind the object (supports 0, 180; picamera on legacy OS also allowed 90 and 270 but this isn't the case on newer OS versions)
 * `MID_BUTTON_READOUT`: Defines what happens when pressing the middle button of a mouse. `True` reads out the text in the preview, `False` saves the preview as an image (name is the current timestamp)
 * `DISTANCE_TO_SURFACE_CM`: Can be overridden for v3 camera to fix the focus at a specific distance, default is autofocus
+* `AUDIO`: Can be modified to force audio via HDMI if `raspi-config` isn't enough, just uncomment the respective line
 
 ## Limitations
 * The monitor has to be switched on before or at the same time as the Raspberry Pi

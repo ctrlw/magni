@@ -53,6 +53,9 @@ factor = SCALE_FACTORS[0]  # use first entry as initial factor on boot up
 OCR_LANG = 'eng'   # Tesseract's character recognition: eng, deu, spa, fra, ita
 TTS_LANG = 'en-GB' # Pico's Text to Speech: en-GB, en-US, de-DE, es-ES, fr-FR, it-IT
 
+AUDIO = 'aplay'
+# uncomment next line to get audio via HDMI, see https://forums.raspberrypi.com/viewtopic.php?t=351718
+# AUDIO = 'aplay -D sysdefault:CARD=vc4hdmi'
 
 # define GPIO pins for (optional) push buttons
 PIN_NUMBER_SCALE =  4 # physical 7, scale button
@@ -184,13 +187,14 @@ def save_photo(filename = ''):
 
 def readout():
     global factor
-    global bg_process 
-    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && aplay plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && aplay tmp.wav'
+    global bg_process
+
+    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && {AUDIO} plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && {AUDIO} tmp.wav'
     if bg_process != None and bg_process.poll() == None:
         # if background process is running, just kill it and do nothing
         os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
     else:
-        subprocess.call('aplay plop.wav', shell=True)
+        subprocess.call(f'{AUDIO} plop.wav', shell=True)
         save_photo('tmp.jpg')
         bg_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
