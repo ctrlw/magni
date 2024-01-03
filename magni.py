@@ -189,7 +189,13 @@ def readout():
     global factor
     global bg_process
 
-    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && {AUDIO} plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && {AUDIO} tmp.wav'
+    # remove hyphens at end of line and append the next line, so TTS won't read them out
+    # See https://unix.stackexchange.com/a/26289
+    FIX_HYPHENS = "perl -i.original -p0e 's/(\w)-[\n]+(\w)/$1$2/igs' tmp.txt"
+
+    # command to run OCR, remove hyphens, play a sound, run TTS and play the result
+    cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && {FIX_HYPHENS} && {AUDIO} plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && {AUDIO} tmp.wav'
+
     if bg_process != None and bg_process.poll() == None:
         # if background process is running, just kill it and do nothing
         os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
