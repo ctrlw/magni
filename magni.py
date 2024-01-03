@@ -89,7 +89,7 @@ def picamera2_invert(request):
         with MappedArray(request, "main") as m:
             array = m.array
             for i in range(len(array)):
-                array[i] = 255 - array[i]
+                array[i] = ~array[i]
 
 
 # toggle between normal and inverted colours
