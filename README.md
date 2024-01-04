@@ -29,7 +29,9 @@ The script supports multiple input sources:
   * Enter: switch to next magnification level
   * /: toggle between regular view and colour inversion
   * r: read out the text on the screen, stop it if already processing
-  * f: autofocus (only with v3 camera, also happens automatically on each magnification change)
+  * a: autofocus (only with v3 camera, also happens automatically on each magnification change)
+  * f: focus a bit closer
+  * F: focus a bit further away
   * s: save the current preview as an image, name is the current timestamp
   * 1-0: set magnification level to specific value between 1 and 10
   * Esc or q: quit

@@ -189,14 +189,28 @@ def scale(new_factor):
         camera.set_controls({'AfWindows': [window]})
         camera.autofocus_cycle()
 
-# focus on whole sensor field regardless of current preview area
-def focus():
+# change focus (only on supported cameras like the v3 camera, using picamera2)
+# multiply current LensPosition (in dioptrien, i.e. 1/distance_m) by given factor
+# if None given, autofocus on whole sensor field regardless of current preview
+def focus(multiply_by = None):
     global camera
 
     # update autofocus (only supported on picamera2)
     if hasattr(camera, 'camera_controls') and 'AfMode' in camera.camera_controls:
-        camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Auto})
-        camera.autofocus_cycle()
+        current_val = camera.capture_metadata()['LensPosition']
+        if multiply_by is None:
+            overlay(f'Auto: {current_val:.2f}')
+            camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Auto})
+            camera.autofocus_cycle()
+            current_val = camera.capture_metadata()['LensPosition']
+            overlay(f'Auto: {current_val:.2f}')
+        else:
+            camera.set_controls({'AfMode': controls.AfModeEnum.Manual})
+            val = current_val * multiply_by
+            camera.set_controls({'LensPosition': val})
+            overlay(f'{val:.2f}')
+
+
 
 def quit():
     global devices    
@@ -274,13 +288,18 @@ async def handle_events(device):
     async for event in device.async_read_loop():
         if event.type == evdev.ecodes.EV_KEY and event.value == 0:
             code = event.code
+            modifiers = device.active_keys()
+            is_shift = evdev.ecodes.KEY_LEFTSHIFT in modifiers or evdev.ecodes.KEY_RIGHTSHIFT in modifiers
+
             # mouse buttons
             if code == evdev.ecodes.BTN_MOUSE: next_factor()
             elif code == evdev.ecodes.BTN_RIGHT: invert()
             elif code == evdev.ecodes.BTN_MIDDLE: readout()
 
             # regular keys
-            elif code == evdev.ecodes.KEY_F: focus()
+            elif code == evdev.ecodes.KEY_A: focus()
+            elif code == evdev.ecodes.KEY_F and is_shift: focus(0.75)
+            elif code == evdev.ecodes.KEY_F: focus(1.5)
             elif code == evdev.ecodes.KEY_Q: quit()
             elif code == evdev.ecodes.KEY_ESC: quit()
             elif code == evdev.ecodes.KEY_ENTER: next_factor()
