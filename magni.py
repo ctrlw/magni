@@ -19,10 +19,20 @@ try:
 except ImportError:
     pass
 
+# numpy and cv2 are only needed for the overlay text
+try:
+    import cv2
+    print("Using cv2")
+    import numpy as np
+    print("Using numpy")
+except ImportError:
+    pass
+
 import os                      # for background OCR and TTS process
 import re                      # for parsing fbset output
 import signal                  # to kill background process 
 import subprocess              # for calling fbset to detect screen resolution and readout
+import sys                     # for checking if modules are loaded
 
 # You can adapt this script to your specific setup, by changing the constants 
 # SCALE_FACTORS can be modified for a fixed set of scale factors
@@ -65,6 +75,9 @@ AUDIO = 'aplay'
 PIN_NUMBER_SCALE =  4 # physical 7, scale button
 PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
 
+# Enable overlay text for debugging
+ENABLE_OVERLAY = False
+
 # Readout uses a background process to run OCR and TTS
 bg_process = None
 
@@ -86,6 +99,20 @@ def screen_resolution_fbset():
     except:
         pass
     return SCREEN_WIDTH, SCREEN_HEIGHT
+
+# show text on screen
+def overlay(text):
+    global camera
+
+    if ENABLE_OVERLAY and 'numpy' in sys.modules and 'cv2' in sys.modules:
+        colour = (255, 0, 0, 255)
+        origin = (0, 50)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 1
+        thickness = 2
+        buffer = np.zeros((200, 400, 4), dtype=np.uint8)
+        cv2.putText(buffer, text, origin, font, scale, colour, thickness)
+        camera.set_overlay(buffer)
 
 def picamera2_invert(request):
     # picamera2 doesn't support image_effect, need to invert manually instead
@@ -154,6 +181,7 @@ def scale(new_factor):
 
     window = (0, 0, crop_w, crop_h)
     camera.set_controls({'ScalerCrop': window})
+    overlay(f'{new_factor:.2f}')
     
     # focus on cropped area if camera supports autofocus
     if 'AfMode' in camera.camera_controls and DISTANCE_TO_SURFACE_CM is None:
@@ -199,13 +227,14 @@ def readout():
 
     # command to run OCR, remove hyphens, play a sound, run TTS and play the result
     cmd = f'tesseract tmp.jpg tmp -l {OCR_LANG} && {FIX_HYPHENS} && {AUDIO} plop.wav && pico2wave -w tmp.wav -l {TTS_LANG} < tmp.txt && {AUDIO} tmp.wav'
-
+    overlay('')
     if bg_process != None and bg_process.poll() == None:
         # if background process is running, just kill it and do nothing
         os.killpg(os.getpgid(bg_process.pid), signal.SIGTERM)
     else:
         subprocess.call(f'{AUDIO} plop.wav', shell=True)
         save_photo('tmp.jpg')
+        overlay('Reading')
         bg_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
 # start displaying the default camera view
