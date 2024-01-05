@@ -161,8 +161,8 @@ def scale(new_factor):
     global factor
     global screen
     
-    factor = new_factor
-    # print("Scale factor", factor)
+    # ensure that factor is at least 1
+    factor = max(1, new_factor)
 
     # in legacy OS update roi value
     if hasattr(camera, 'crop'):
@@ -181,13 +181,18 @@ def scale(new_factor):
 
     window = (0, 0, crop_w, crop_h)
     camera.set_controls({'ScalerCrop': window})
-    overlay(f'{new_factor:.2f}')
+    overlay(f'{factor:.2f}')
     
     # focus on cropped area if camera supports autofocus
     if 'AfMode' in camera.camera_controls and DISTANCE_TO_SURFACE_CM is None:
         camera.set_controls({'AfMode': controls.AfModeEnum.Auto, 'AfMetering': controls.AfMeteringEnum.Windows})
         camera.set_controls({'AfWindows': [window]})
         camera.autofocus_cycle()
+
+# change scale factor by given amount
+def zoom(change_by):
+    global factor
+    scale(factor + change_by)
 
 # change focus (only on supported cameras like the v3 camera, using picamera2)
 # multiply current LensPosition (in dioptrien, i.e. 1/distance_m) by given factor
@@ -209,8 +214,6 @@ def focus(multiply_by = None):
             val = current_val * multiply_by
             camera.set_controls({'LensPosition': val})
             overlay(f'{val:.2f}')
-
-
 
 def quit():
     global devices    
@@ -306,6 +309,8 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_SLASH: invert()
             elif code == evdev.ecodes.KEY_S: save_photo()
             elif code == evdev.ecodes.KEY_R: readout()
+            elif code == evdev.ecodes.KEY_Z and is_shift: zoom(-0.2)
+            elif code == evdev.ecodes.KEY_Z: zoom(0.2)
             elif code == evdev.ecodes.KEY_0: scale(10)
             elif code == evdev.ecodes.KEY_1: scale(1)
             elif code == evdev.ecodes.KEY_2: scale(2)
