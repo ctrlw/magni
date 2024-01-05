@@ -34,6 +34,8 @@ The script supports multiple input sources:
   * a: autofocus (only with v3 camera, also happens automatically on each magnification change)
   * f: focus a bit closer
   * F: focus a bit further away
+  * c: increase contrast
+  * C: decrease contrast
   * s: save the current preview as an image, name is the current timestamp
   * 1-0: set magnification level to specific value between 1 and 10
   * Esc or q: quit

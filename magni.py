@@ -194,6 +194,28 @@ def zoom(change_by):
     global factor
     scale(factor + change_by)
 
+# multiply current contrast by given value
+# didn't find a way to read the current contrast, so 
+def contrast(multiply_by):
+    global camera
+
+    if hasattr(camera, 'camera_controls') and 'Contrast' in camera.camera_controls:
+        min_contrast, max_contrast, def_contrast = camera.camera_controls['Contrast']
+        if not hasattr(contrast, 'contrast'):
+            # init static var with default contrast value (1)
+            contrast.contrast = CONTRAST
+        val = contrast.contrast * multiply_by
+        if min_contrast <= val <= max_contrast:
+            contrast.contrast = val
+            camera.set_controls({'Contrast': val})
+            overlay(f'{val:.2f}')
+    elif hasattr(camera, 'contrast'):
+        # legacy picamera, uses range from -100 to 100 so just stepping +-10
+        diff = 10 if multiply_by > 1 else -10
+        val = camera.contrast + diff
+        if -100 <= val <= 100:
+            camera.contrast = val
+
 # change focus (only on supported cameras like the v3 camera, using picamera2)
 # multiply current LensPosition (in dioptrien, i.e. 1/distance_m) by given factor
 # if None given, autofocus on whole sensor field regardless of current preview
@@ -311,6 +333,8 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_R: readout()
             elif code == evdev.ecodes.KEY_Z and is_shift: zoom(-0.2)
             elif code == evdev.ecodes.KEY_Z: zoom(0.2)
+            elif code == evdev.ecodes.KEY_C and is_shift: contrast(0.5)
+            elif code == evdev.ecodes.KEY_C: contrast(2)
             elif code == evdev.ecodes.KEY_0: scale(10)
             elif code == evdev.ecodes.KEY_1: scale(1)
             elif code == evdev.ecodes.KEY_2: scale(2)
