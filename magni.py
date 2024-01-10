@@ -174,12 +174,12 @@ def scale(new_factor):
     # in current OS compute pixel positions in sensor based on scale factor and screen ratio
     screen_w, screen_h = screen
     screen_ratio = screen_w / screen_h
-    camera_w, camera_h = camera.camera_properties['PixelArraySize']
+    x, y, camera_w, camera_h = camera.camera_properties['ScalerCropMaximum']
 
     crop_w = int(camera_w / factor)
     crop_h = min(int(crop_w / screen_ratio), camera_h)
 
-    window = (0, 0, crop_w, crop_h)
+    window = (x, y, crop_w, crop_h)
     camera.set_controls({'ScalerCrop': window})
     overlay(f'{factor:.2f}')
     
