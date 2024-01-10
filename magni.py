@@ -339,7 +339,12 @@ def init_camera(width, height):
         picam2.pre_callback = picamera2_invert
         picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
         picam2.start()
-        picam2.set_controls({'Contrast': CONTRAST})
+        picam2.set_controls({
+            'Brightness': BRIGHTNESS,
+            'Contrast': CONTRAST,
+            'Saturation': SATURATION,
+            'Sharpness': SHARPNESS
+        })
         if 'AfMode' in picam2.camera_controls:
             if DISTANCE_TO_SURFACE_CM is None:
                 # if no distance given, use autofocus on magnification change
