@@ -34,8 +34,10 @@ The script supports multiple input sources:
   * a: autofocus (only with v3 camera, also happens automatically on each magnification change)
   * f: focus a bit closer
   * F: focus a bit further away
+  * b: increase brightness
+  * B: reduce brightness
   * c: increase contrast
-  * C: decrease contrast
+  * C: reduce contrast
   * s: save the current preview as an image, name is the current timestamp
   * 1-0: set magnification level to specific value between 1 and 10
   * Esc or q: quit
@@ -178,6 +180,8 @@ You can easily adapt magni.py to your own setup and needs:
 * `MID_BUTTON_READOUT`: Defines what happens when pressing the middle button of a mouse. `True` reads out the text in the preview, `False` saves the preview as an image (name is the current timestamp)
 * `DISTANCE_TO_SURFACE_CM`: Can be overridden for v3 camera to fix the focus at a specific distance, default is autofocus
 * `AUDIO`: Can be modified to force audio via HDMI if `raspi-config` isn't enough, just uncomment the respective line
+* `BRIGHTNESS`: Can be modified to start with different brightness, values between -1.0 and 1.0
+* `CONTRAST`: Can be modified to start with different contrast, values between 0.0 and 32.0
 
 ## Limitations
 * The monitor has to be switched on before or at the same time as the Raspberry Pi

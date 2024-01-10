@@ -50,6 +50,10 @@ ROTATION = 180
 # 1 is default, bigger numbers increase contrast
 CONTRAST = 1
 
+# Increase brightness for more clarity
+# 0 is default for picamera2, range is -1..1
+BRIGHTNESS = 0.2
+
 # Distance in cm between camera objective and the surface (e.g. table)
 # Adapt this if you have a camera v3 in fixed setup and want to fix the focus
 # The default None will run autofocus on each change of magnification
@@ -194,6 +198,18 @@ def zoom(change_by):
     global factor
     scale(factor + change_by)
 
+def brightness(change_by):
+    if hasattr(camera, 'camera_controls') and 'Brightness' in camera.camera_controls:
+        min_val, max_val, def_val = camera.camera_controls['Brightness']
+        if not hasattr(brightness, 'val'):
+            # init static var with default brightness value
+            brightness.val = BRIGHTNESS
+        val = brightness.val + change_by
+        if min_val <= val <= max_val:
+            brightness.val = val
+            camera.set_controls({'Brightness': val})
+            overlay(f'{val:.2f}')
+        
 # multiply current contrast by given value
 # didn't find a way to read the current contrast, so 
 def contrast(multiply_by):
@@ -333,6 +349,8 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_R: readout()
             elif code == evdev.ecodes.KEY_Z and is_shift: zoom(-0.2)
             elif code == evdev.ecodes.KEY_Z: zoom(0.2)
+            elif code == evdev.ecodes.KEY_B and is_shift: brightness(-0.1)
+            elif code == evdev.ecodes.KEY_B: brightness(0.1)
             elif code == evdev.ecodes.KEY_C and is_shift: contrast(0.5)
             elif code == evdev.ecodes.KEY_C: contrast(2)
             elif code == evdev.ecodes.KEY_0: scale(10)
