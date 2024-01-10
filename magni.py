@@ -127,10 +127,7 @@ def picamera2_invert(request):
     # picamera2 doesn't support image_effect, need to invert manually instead
     if hasattr(invert, 'is_inverted') and invert.is_inverted:
         with MappedArray(request, "main") as m:
-            array = m.array
-            for i in range(len(array)):
-                array[i] = ~array[i]
-
+            m.array[...] = ~m.array
 
 # toggle between normal and inverted colours
 def invert():
