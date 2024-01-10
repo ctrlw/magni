@@ -50,9 +50,11 @@ ROTATION = 180
 # 1 is default, bigger numbers increase contrast
 CONTRAST = 1
 
-# Increase brightness for more clarity
-# 0 is default for picamera2, range is -1..1
+# Increase brightness for more clarity, 0 is default, range -1..1
 BRIGHTNESS = 0.2
+
+# Increase saturation for stronger colours, 1 is default, range 0..32
+SATURATION = 1
 
 # Distance in cm between camera objective and the surface (e.g. table)
 # Adapt this if you have a camera v3 in fixed setup and want to fix the focus
@@ -198,7 +200,10 @@ def zoom(change_by):
     global factor
     scale(factor + change_by)
 
+# change brightness by given amount
 def brightness(change_by):
+    global camera
+
     if hasattr(camera, 'camera_controls') and 'Brightness' in camera.camera_controls:
         min_val, max_val, def_val = camera.camera_controls['Brightness']
         if not hasattr(brightness, 'val'):
@@ -209,9 +214,9 @@ def brightness(change_by):
             brightness.val = val
             camera.set_controls({'Brightness': val})
             overlay(f'{val:.2f}')
-        
+
+
 # multiply current contrast by given value
-# didn't find a way to read the current contrast, so 
 def contrast(multiply_by):
     global camera
 
@@ -231,6 +236,20 @@ def contrast(multiply_by):
         val = camera.contrast + diff
         if -100 <= val <= 100:
             camera.contrast = val
+
+# multiply current saturation by given value
+def saturation(multiply_by):
+    global camera
+    if hasattr(camera, 'camera_controls') and 'Saturation' in camera.camera_controls:
+        min_val, max_val, def_val = camera.camera_controls['Saturation']
+        if not hasattr(saturation, 'val'):
+            # init static var with default value
+            saturation.val = SATURATION
+        val = saturation.val * multiply_by
+        if min_val <= val <= max_val:
+            saturation.val = val
+            camera.set_controls({'Saturation': val})
+            overlay(f'{val:.2f}')
 
 # change focus (only on supported cameras like the v3 camera, using picamera2)
 # multiply current LensPosition (in dioptrien, i.e. 1/distance_m) by given factor
@@ -353,6 +372,8 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_B: brightness(0.1)
             elif code == evdev.ecodes.KEY_C and is_shift: contrast(0.5)
             elif code == evdev.ecodes.KEY_C: contrast(2)
+            elif code == evdev.ecodes.KEY_T and is_shift: saturation(0.5)
+            elif code == evdev.ecodes.KEY_T: saturation(2)
             elif code == evdev.ecodes.KEY_0: scale(10)
             elif code == evdev.ecodes.KEY_1: scale(1)
             elif code == evdev.ecodes.KEY_2: scale(2)

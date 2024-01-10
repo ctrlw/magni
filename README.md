@@ -25,7 +25,7 @@ The script supports multiple input sources:
   * Right button: toggle between regular view and colour inversion
   * Middle button: read out the text on the screen, stop it if already processing
   * Movement: no impact, the mouse is only used for its buttons. The recommendation is to prevent the mouse from accidental slipping, e.g. by sticking rubber bumpers on the bottom
-* Keyboard (also supports a small numeric keyboard)
+* Keyboard (also supports a small numeric keyboard for the main features)
   * Enter: switch to next magnification level
   * /: toggle between regular view and colour inversion
   * r: read out the text on the screen, stop it if already processing
@@ -38,6 +38,8 @@ The script supports multiple input sources:
   * B: reduce brightness
   * c: increase contrast
   * C: reduce contrast
+  * t: increase saturation
+  * T: reduce saturation
   * s: save the current preview as an image, name is the current timestamp
   * 1-0: set magnification level to specific value between 1 and 10
   * Esc or q: quit
@@ -182,6 +184,7 @@ You can easily adapt magni.py to your own setup and needs:
 * `AUDIO`: Can be modified to force audio via HDMI if `raspi-config` isn't enough, just uncomment the respective line
 * `BRIGHTNESS`: Can be modified to start with different brightness, values between -1.0 and 1.0
 * `CONTRAST`: Can be modified to start with different contrast, values between 0.0 and 32.0
+* `SATURATION`: Can be modified to start with different saturation, values between 0.0 and 32.0
 
 ## Limitations
 * The monitor has to be switched on before or at the same time as the Raspberry Pi
