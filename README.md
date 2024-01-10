@@ -38,6 +38,8 @@ The script supports multiple input sources:
   * B: reduce brightness
   * c: increase contrast
   * C: reduce contrast
+  * h: increase sharpness
+  * H: reduce sharpness
   * t: increase saturation
   * T: reduce saturation
   * s: save the current preview as an image, name is the current timestamp
@@ -184,6 +186,7 @@ You can easily adapt magni.py to your own setup and needs:
 * `AUDIO`: Can be modified to force audio via HDMI if `raspi-config` isn't enough, just uncomment the respective line
 * `BRIGHTNESS`: Can be modified to start with different brightness, values between -1.0 and 1.0
 * `CONTRAST`: Can be modified to start with different contrast, values between 0.0 and 32.0
+* `SHARPNESS`: Can be modified to start with different sharpness, values between 0.0 and 16.0
 * `SATURATION`: Can be modified to start with different saturation, values between 0.0 and 32.0
 
 ## Limitations

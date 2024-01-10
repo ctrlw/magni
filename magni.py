@@ -56,6 +56,9 @@ BRIGHTNESS = 0.2
 # Increase saturation for stronger colours, 1 is default, range 0..32
 SATURATION = 1
 
+# Increase sharpness, 1 is default, range 0..16
+SHARPNESS = 1
+
 # Distance in cm between camera objective and the surface (e.g. table)
 # Adapt this if you have a camera v3 in fixed setup and want to fix the focus
 # The default None will run autofocus on each change of magnification
@@ -251,6 +254,20 @@ def saturation(multiply_by):
             camera.set_controls({'Saturation': val})
             overlay(f'{val:.2f}')
 
+# multiply current sharpness by given value
+def sharpness(multiply_by):
+    global camera
+    if hasattr(camera, 'camera_controls') and 'Sharpness' in camera.camera_controls:
+        min_val, max_val, def_val = camera.camera_controls['Sharpness']
+        if not hasattr(sharpness, 'val'):
+            # init static var with default value
+            sharpness.val = SHARPNESS
+        val = sharpness.val * multiply_by
+        if min_val <= val <= max_val:
+            sharpness.val = val
+            camera.set_controls({'Sharpness': val})
+            overlay(f'{val:.2f}')
+
 # change focus (only on supported cameras like the v3 camera, using picamera2)
 # multiply current LensPosition (in dioptrien, i.e. 1/distance_m) by given factor
 # if None given, autofocus on whole sensor field regardless of current preview
@@ -372,6 +389,8 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_B: brightness(0.1)
             elif code == evdev.ecodes.KEY_C and is_shift: contrast(0.5)
             elif code == evdev.ecodes.KEY_C: contrast(2)
+            elif code == evdev.ecodes.KEY_H and is_shift: sharpness(0.5)
+            elif code == evdev.ecodes.KEY_H: sharpness(2)
             elif code == evdev.ecodes.KEY_T and is_shift: saturation(0.5)
             elif code == evdev.ecodes.KEY_T: saturation(2)
             elif code == evdev.ecodes.KEY_0: scale(10)
