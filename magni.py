@@ -104,6 +104,7 @@ COLOR_MODES = [
 
 # Enable overlay text for debugging
 ENABLE_OVERLAY = False
+OVERLAY_DURATION_S = 3
 
 # Readout uses a background process to run OCR and TTS
 bg_process = None
@@ -127,8 +128,8 @@ def screen_resolution_fbset():
         pass
     return SCREEN_WIDTH, SCREEN_HEIGHT
 
-# show text on screen
-def overlay(text):
+# show text on screen for a duration given in seconds
+def overlay(text, duration_s = OVERLAY_DURATION_S):
     global camera
 
     if ENABLE_OVERLAY and 'numpy' in sys.modules and 'cv2' in sys.modules:
@@ -140,6 +141,13 @@ def overlay(text):
         buffer = np.zeros((200, 400, 4), dtype=np.uint8)
         cv2.putText(buffer, text, origin, font, scale, colour, thickness)
         camera.set_overlay(buffer)
+
+        if duration_s == 0:
+            overlay.content = None
+        else:
+            ts_now = datetime.timestamp(datetime.now())
+            ts_end = ts_now + duration_s
+            overlay.content = (text, ts_end)
 
 # Create a colormap / palette as gradient from one color to another
 # The colors are given as 8 bit RGB tuple
@@ -167,6 +175,13 @@ def color_mode_callback(request):
 # called on each frame by picamera2 for modifications like color modes
 def pre_callback(request):
     color_mode_callback(request)
+
+    if ENABLE_OVERLAY and hasattr(overlay, 'content') and overlay.content != None:
+        # remove overlay text if display duration is over
+        text, ts_end = overlay.content
+        ts_now = datetime.timestamp(datetime.now())
+        if ts_now > ts_end:
+            overlay('', 0)
 
 def color_mode():
     global camera
