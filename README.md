@@ -8,7 +8,7 @@ Software for a simple video magnifier running on Raspberry Pi. The first video d
 
 
 ## Description
-This project aims to build a video magnifier based on Raspberry Pi and its camera. It can be used to see printed text or images at a larger scale, or to identify small parts like SMD electronics. The device has to be connected to a monitor which displays the magnified image from the camera. The user can step through predefined scale factors with a button or the Enter key, and toggle colour-inversion with a second button or the "/" key. There's also basic support for reading out text (either English, Spanish, French, German or Italian).
+This project aims to build a video magnifier based on Raspberry Pi and its camera. It can be used to see printed text or images at a larger scale, or to identify small parts like SMD electronics. The device has to be connected to a monitor which displays the magnified image from the camera. The user can step through predefined scale factors with a button or the Enter key, and step through different colour modes (like colour-inversion) with a second button or the "/" key. There's also basic support for reading out text (supports English, Spanish, French, German or Italian).
 
 After the initial setup, the device works fully offline and does not need an internet connection.
 
@@ -22,12 +22,12 @@ The device boots directly into (slightly magnified) fullscreen camera view, whic
 The script supports multiple input sources:
 * Mouse
   * Left button: switch to next magnification level (from smaller to bigger, then jump back to first)
-  * Right button: toggle between regular view and colour inversion
+  * Right button: switch between regular view and colour inversion / colour modes
   * Middle button: read out the text on the screen, stop it if already processing
   * Movement: no impact, the mouse is only used for its buttons. The recommendation is to prevent the mouse from accidental slipping, e.g. by sticking rubber bumpers on the bottom
 * Keyboard (also supports a small numeric keyboard for the main features)
   * Enter: switch to next magnification level
-  * /: toggle between regular view and colour inversion
+  * /: switch between regular view and colour inversion / colour modes
   * r: read out the text on the screen, stop it if already processing
   * z: zoom in
   * Z: zoom out
@@ -45,7 +45,7 @@ The script supports multiple input sources:
   * s: save the current preview as an image, name is the current timestamp
   * 1-0: set magnification level to specific value between 1 and 10
   * Esc or q: quit
-* Push buttons via GPIO, one to iterate to the next scaling factor and one to toggle colour inversion
+* Push buttons via GPIO, one to iterate to the next scaling factor and one to switch between colour inversion / colour modes
 
 ## Hardware
 To build the magnifier, you need at least the following
@@ -80,7 +80,7 @@ The setup can be built in different ways, so let your creativity flow. Here are 
 
 A slightly more in-depth description of the first 2 hardware setups is given at http://www.fhack.org/2018/12/19/raspberry-pi-video-magnifier-2018/
 
-If you use the optional push buttons instead of a USB mouse or numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour-invert button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
+If you use the optional push buttons instead of a USB mouse or numerical keyboard, the script expects them at GPIO 4 (physical 7) for the scale button and GPIO 18 (physical 12) for the colour button, using BCM numbering (4 being the 4th pin on the left, 18 being the 6th pin on the right of the GPIO). Each button needs to be connected with GND, e.g. at pins 9 and 14.
 While physical buttons are nice, this involves soldering and they may be susceptible to electro-magnetic noise (e.g. getting triggered from switching some device on/off, or even from static charges from my Ikea Markus chair).
 
 ## Setup
@@ -96,7 +96,7 @@ While physical buttons are nice, this involves soldering and they may be suscept
 * Run the following commands in the terminal:
 ```
 sudo apt update && sudo apt -y upgrade
-sudo apt install -y python3-picamera2 python3-gpiozero python3-evdev
+sudo apt install -y python3-picamera2 python3-gpiozero python3-evdev python3-opencv
 wget https://github.com/ctrlw/magni/raw/master/magni.py
 chmod +x magni.py
 echo "clear" >> .bashrc
@@ -116,11 +116,11 @@ echo "./magni.py" >> .bashrc
 ### Legacy OS
 The setup is the same as above with the following exceptions:
 * In `sudo raspi-config` also enable Legacy camera support: Interface options -> Legacy Camera -> Yes
-* When installing python libraries with apt, install `python3-picamera` instead of `python3-picamera2`
+* When installing python libraries with apt, install `python3-picamera` instead of `python3-picamera2`, and you can skip `python3-opencv` as colour inversion is supported out of the box but not the colour modes
 * For Readout (see below) use `bullseye` instead of `bookworm`. However, the area being read differs from the visible preview.
 * You can use `libcamera-still` and `raspistill` instead of `libcamera-hello`
 
-If you enable Legacy camera support, v3 cameras are not supported (at all, not just the autofocus!). The main advantage with legacy camera is the faster colour inversion, which can be otherwise slow on older models like the original Pi Zero or the Raspberry Pi models before the Pi 3.
+If you enable Legacy camera support, v3 cameras are not supported (at all, not just the autofocus!). The main advantage with legacy camera is the faster colour inversion, which can be otherwise slow on older models like the original Pi Zero or the Raspberry Pi models before the Pi 3. However, other colour modes like yellow on blue are only supported with the newer OS and needs opencv installed.
 
 ### Support reading out the visible text (OCR + TTS)
 This feature is a very basic approach to read out text that is visible on the screen. It gets triggered when pressing the middle button of the mouse or "r" on an attached keyboard. Pressing the key again while it's still processing stops the background process.
@@ -188,13 +188,13 @@ You can easily adapt magni.py to your own setup and needs:
 * `CONTRAST`: Can be modified to start with different contrast, values between 0.0 and 32.0
 * `SHARPNESS`: Can be modified to start with different sharpness, values between 0.0 and 16.0
 * `SATURATION`: Can be modified to start with different saturation, values between 0.0 and 32.0
+* `COLOR_MODES`: Can be modified to change the list of supported colour modes to step through
 
 ## Limitations
 * The monitor has to be switched on before or at the same time as the Raspberry Pi
 * Magnification is done in software, so scale factors of 10 and above tend to be noisy
 * On older cameras the camera focus is fixed, so it cannot adapt to objects that are much closer or further away. Pi camera v3 supports autofocus but it's often not that accurate
 * It may take a minute from power on till the picture is shown (depending on model and SD card)
-* Colour modes other than inversion (e.g. blue on yellow) are currently not supported
 * The readout feature is very basic and mostly a proof of concept
 
 ## Alternatives

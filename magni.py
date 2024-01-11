@@ -84,6 +84,24 @@ AUDIO = 'aplay'
 PIN_NUMBER_SCALE =  4 # physical 7, scale button
 PIN_NUMBER_COLOR = 18 # physical 12, colour mode button
 
+# some color definitions (as RGB colors), add your own
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+
+# Available color modes to step through
+# Add, remove or reorder as needed
+# For regular (unmodified) colors, use None
+COLOR_MODES = [
+    None, # normal colors
+    ('White on Black', WHITE, BLACK),
+    ('Yellow on Blue', YELLOW, BLUE),
+    ('Green on Black', GREEN, BLACK),
+]
+
 # Enable overlay text for debugging
 ENABLE_OVERLAY = False
 
@@ -123,23 +141,48 @@ def overlay(text):
         cv2.putText(buffer, text, origin, font, scale, colour, thickness)
         camera.set_overlay(buffer)
 
-def picamera2_invert(request):
+# Create a colormap / palette as gradient from one color to another
+# The colors are given as 8 bit RGB tuple
+def colormap(color1, color2):
+    palette = np.zeros((256, 1, 3), dtype=np.uint8)
+    for i in range(256):
+        palette[i, 0, 0] = int(color1[0] + i * (color2[0] - color1[0]) / 255)
+        palette[i, 0, 1] = int(color1[1] + i * (color2[1] - color1[1]) / 255)
+        palette[i, 0, 2] = int(color1[2] + i * (color2[2] - color1[2]) / 255)
+    return palette
+
+# called on each frame with picamera2 to modify the colors
+def color_mode_callback(request):
     # picamera2 doesn't support image_effect, need to invert manually instead
-    if hasattr(invert, 'is_inverted') and invert.is_inverted:
+    if hasattr(color_mode, 'is_inverted') and color_mode.is_inverted:
         with MappedArray(request, "main") as m:
             m.array[...] = ~m.array
+    elif hasattr(color_mode, 'index') and COLOR_MODES[color_mode.index] != None:
+        name, dark, light = COLOR_MODES[color_mode.index]
+        with MappedArray(request, "main") as m:
+            buffer = cv2.cvtColor(m.array, cv2.COLOR_BGR2GRAY)
+            heatmap = cv2.applyColorMap(buffer, colormap(dark, light))
+            m.array[...] = heatmap
 
-# toggle between normal and inverted colours
-def invert():
+# called on each frame by picamera2 for modifications like color modes
+def pre_callback(request):
+    color_mode_callback(request)
+
+def color_mode():
     global camera
     if hasattr(camera, 'image_effect'):
-        # image_effect is not supported in picamera2
+        # in legacy picamera toggle between normal and inverted colours
         camera.image_effect = 'none' if camera.image_effect == 'negative' else 'negative'
+    elif 'numpy' in sys.modules and 'cv2' in sys.modules:
+        # if opencv is installed with picamera2, step through predefined color modes
+        if not hasattr(color_mode, 'index'):
+            color_mode.index = 0
+        color_mode.index = (color_mode.index + 1) % len(COLOR_MODES)
     else:
-        # toggle state variable which is used in picamera2_invert
-        if not hasattr(invert, 'is_inverted'):
-            invert.is_inverted = False
-        invert.is_inverted = not invert.is_inverted
+        # otherwise invert only (doesn't need opencv)
+        if not hasattr(color_mode, 'is_inverted'):
+            color_mode.is_inverted = False
+        color_mode.is_inverted = not color_mode.is_inverted
 
 # react on button pressed
 def next_factor():
@@ -331,9 +374,13 @@ def init_camera(width, height):
         # for current OS use picamera2
         picam2 = Picamera2()
         transform = Transform(hflip=1, vflip=1) if ROTATION == 180 else Transform()
-        config = picam2.create_preview_configuration({'size': (width, height)}, transform=transform)
+        config = picam2.create_preview_configuration(
+            # BGR888 uses 8 bit for actual RGB and no alpha channel
+            # this simplifies color mode changes with opencv
+            main={'size': (width, height), 'format': 'BGR888'},
+            transform=transform)
         picam2.configure(config)
-        picam2.pre_callback = picamera2_invert
+        picam2.pre_callback = pre_callback
         picam2.start_preview(Preview.DRM, x=0, y=0, width=width, height=height) # no transform!
         picam2.start()
         picam2.set_controls({
@@ -372,7 +419,7 @@ async def handle_events(device):
 
             # mouse buttons
             if code == evdev.ecodes.BTN_MOUSE: next_factor()
-            elif code == evdev.ecodes.BTN_RIGHT: invert()
+            elif code == evdev.ecodes.BTN_RIGHT: color_mode()
             elif code == evdev.ecodes.BTN_MIDDLE: readout()
 
             # regular keys
@@ -382,7 +429,7 @@ async def handle_events(device):
             elif code == evdev.ecodes.KEY_Q: quit()
             elif code == evdev.ecodes.KEY_ESC: quit()
             elif code == evdev.ecodes.KEY_ENTER: next_factor()
-            elif code == evdev.ecodes.KEY_SLASH: invert()
+            elif code == evdev.ecodes.KEY_SLASH: color_mode()
             elif code == evdev.ecodes.KEY_S: save_photo()
             elif code == evdev.ecodes.KEY_R: readout()
             elif code == evdev.ecodes.KEY_Z and is_shift: zoom(-0.2)
@@ -408,7 +455,7 @@ async def handle_events(device):
 
             # numeric keypad
             elif code == evdev.ecodes.KEY_KPENTER: next_factor()
-            elif code == evdev.ecodes.KEY_KPSLASH: invert()
+            elif code == evdev.ecodes.KEY_KPSLASH: color_mode()
             elif code == evdev.ecodes.KEY_KP0: scale(10)
             elif code == evdev.ecodes.KEY_KP1: scale(1)
             elif code == evdev.ecodes.KEY_KP2: scale(2)
@@ -423,7 +470,7 @@ async def handle_events(device):
 button1 = Button(PIN_NUMBER_SCALE)
 button1.when_pressed = next_factor
 button2 = Button(PIN_NUMBER_COLOR)
-button2.when_pressed = invert
+button2.when_pressed = color_mode
 
 screen = screen_resolution_fbset()
 width, height = screen
