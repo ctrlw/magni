@@ -181,7 +181,6 @@ You can easily adapt magni.py to your own setup and needs:
 * `PIN_NUMBER_SCALE`: Set the (BCM) GPIO pin number where you connect the optional scale push-button
 * `PIN_NUMBER_COLOR`: Set the (BCM) GPIO pin number where you connect the optional colour-mode push-button
 * `ROTATION`: Change the value to the camera rotation in your setup if the camera is not placed behind the object (supports 0, 180; picamera on legacy OS also allowed 90 and 270 but this isn't the case on newer OS versions)
-* `MID_BUTTON_READOUT`: Defines what happens when pressing the middle button of a mouse. `True` reads out the text in the preview, `False` saves the preview as an image (name is the current timestamp)
 * `DISTANCE_TO_SURFACE_CM`: Can be overridden for v3 camera to fix the focus at a specific distance, default is autofocus
 * `AUDIO`: Can be modified to force audio via HDMI if `raspi-config` isn't enough, just uncomment the respective line
 * `BRIGHTNESS`: Can be modified to start with different brightness, values between -1.0 and 1.0
